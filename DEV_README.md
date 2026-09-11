@@ -105,3 +105,39 @@ containers or images after the run.
 use — `load_cases()` returns real `ScoringCase` objects, with the gold patch
 kept out of the agent-facing `Instance` type at the type-system level (the
 type has no field for it), not just by convention.
+
+## Agent wiring: one more real finding (Sep 12)
+
+`understudy/agent.py` assembles the three tools and the policy hook into a
+real Strands `Agent`. Building this surfaced something worth knowing before
+Ashraf ever touches AWS: **`Agent(model=None)` does not defer credential
+resolution.** The SDK defaults to `BedrockModel` and tries to load AWS
+credentials immediately at construction — even if the agent is never
+invoked. On this machine that fails with a botocore dependency error before
+any test could even check that tools registered correctly.
+
+Fixed for testing purposes with `tests/fake_model.py` — a minimal `Model`
+subclass that satisfies the abstract interface and touches nothing. Proven
+against the *real* Strands hook registry (not a standalone hook test):
+`git_log` is blocked and the escalation budget is enforced through an actual
+constructed `Agent`, not just the hook object in isolation.
+
+Also added `understudy/ingest/github.py` — real, unauthenticated, read-only
+fetches of public GitHub issues. No credentials needed for reading. Caught a
+real pagination bug against live data: a PR-heavy repo (tested against
+python/cpython) can fill an entire page with pull requests, which get
+filtered out, silently starving the result — fixed by paginating until
+enough real issues are found or the repo genuinely runs out.
+
+64 tests passing. `ARCHITECTURE.md` and `SAFETY.md` are now in the repo,
+describing only what's built, with a mermaid diagram of the real trust
+boundaries.
+
+## Status: everything buildable without AWS/GitHub credentials is done
+
+What's left needs one of: Ashraf's AWS account (any real model call),
+Ashraf's GitHub account (a fork to post to), his decision on evaluation
+spend, or a human (video, recruiting reviewers, publishing posts). Nothing
+further should be built speculatively past this point — the four UI screens
+and the eval-at-scale results depend on having real triage output to render,
+which needs a real model call first.
