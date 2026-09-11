@@ -93,13 +93,108 @@ def run_script_in_container(
     stray input() call hits EOF instead of hanging forever, and every Linux
     capability dropped.
     """
-    name = f"understudy-{uuid.uuid4().hex[:12]}"
-    script_path = script_path.resolve()
+    return _run_locked_down(
+        image,
+        {script_path.resolve(): "/repro/repro.py"},
+        shell_command or swebench_command(workdir, conda_env),
+        timeout_s,
+    )
 
-    cmd = [
-        "run",
-        "--detach",
-        "--name", name,
+
+def prepare_fixed_image(
+    base_image: str,
+    gold_patch_text: str,
+    *,
+    workdir: str = "/testbed",
+) -> str:
+    """Trusted, offline, one-time preparation step: apply the gold patch to
+    a writable copy of the base image and commit the result as a new local
+    image. This is deliberately a SEPARATE container lifecycle from the one
+    that later executes the untrusted script — the patched checkout is
+    produced here with full write access (git needs to write the tree), and
+    the untrusted script is only ever run afterward, against the resulting
+    image, under the same full lockdown as the buggy run. Containment for
+    untrusted code is never weakened by this step.
+
+    Trusted content only: the gold patch is our own offline data, not
+    anything the agent or a generated script ever supplies.
+    """
+    import tempfile
+
+    prep_name = f"understudy-prep-{uuid.uuid4().hex[:12]}"
+    fixed_tag = f"understudy-fixed-{uuid.uuid4().hex[:12]}"
+
+    with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False) as f:
+        f.write(gold_patch_text)
+        patch_path = Path(f.name).resolve()
+
+    try:
+        create = _docker(
+            "create", "--name", prep_name,
+            "-v", f"{patch_path}:/tmp/gold.patch:ro",
+            base_image,
+            "/bin/bash", "-lc",
+            f"cd {workdir} && git apply --whitespace=nowarn /tmp/gold.patch",
+            timeout=30,
+        )
+        if create.returncode != 0:
+            raise RuntimeError(f"prepare_fixed_image: create failed: {create.stderr.decode()}")
+
+        start = _docker("start", "-a", prep_name, timeout=60)
+        if start.returncode != 0:
+            raise RuntimeError(
+                f"prepare_fixed_image: git apply failed: {start.stdout.decode()} {start.stderr.decode()}"
+            )
+
+        commit = _docker("commit", prep_name, fixed_tag, timeout=60)
+        if commit.returncode != 0:
+            raise RuntimeError(f"prepare_fixed_image: commit failed: {commit.stderr.decode()}")
+
+        return fixed_tag
+    finally:
+        _docker("rm", "-f", prep_name, timeout=10)
+        patch_path.unlink(missing_ok=True)
+
+
+def run_patched_script_in_container(
+    image: str,
+    script_path: Path,
+    gold_patch_text: str,
+    *,
+    workdir: str = "/testbed",
+    conda_env: str = "testbed",
+    timeout_s: float = 90.0,
+) -> ExecResult:
+    """Offline-scorer-only: build the patched image, then run the same
+    script under the exact same lockdown as the buggy run. Never reachable
+    from any agent tool — the agent's tools have no way to call this, and
+    git is blocked for the agent in understudy/policy/hooks.py.
+    """
+    fixed_image = prepare_fixed_image(image, gold_patch_text, workdir=workdir)
+    try:
+        return run_script_in_container(
+            fixed_image,
+            script_path,
+            workdir=workdir,
+            conda_env=conda_env,
+            timeout_s=timeout_s,
+        )
+    finally:
+        _docker("rmi", "-f", fixed_image, timeout=30)
+
+
+def _run_locked_down(
+    image: str,
+    mounts: dict[Path, str],
+    shell_command: str,
+    timeout_s: float,
+) -> ExecResult:
+    name = f"understudy-{uuid.uuid4().hex[:12]}"
+
+    cmd = ["run", "--detach", "--name", name]
+    for host_path, container_path in mounts.items():
+        cmd += ["-v", f"{host_path}:{container_path}:ro"]
+    cmd += [
         "--network", "none",
         "--memory", "512m",
         "--cpus", "1",
@@ -109,10 +204,9 @@ def run_script_in_container(
         "--tmpfs", "/tmp:rw,size=64m",
         "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges",
-        "-v", f"{script_path}:/repro/repro.py:ro",
         image,
         "/bin/bash", "-lc",
-        shell_command or swebench_command(workdir, conda_env),
+        shell_command,
     ]
 
     start = _docker(*cmd, timeout=30)

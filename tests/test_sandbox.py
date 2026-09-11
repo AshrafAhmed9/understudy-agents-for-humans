@@ -127,3 +127,63 @@ def test_missing_image_reports_infra_failure_not_a_crash(tmp_path):
     )
     assert result.exit_code == INFRA_FAILURE_EXIT_CODE
     assert result.timed_out is False
+
+
+# --- Offline gold-patch differential path, against a real pulled instance ---
+# Skipped unless that specific image is already present locally (it's ~1GB;
+# we don't want a routine `pytest` run to pull it). scripts/verify_kill_gate.py
+# is the one-off proof this mirrors; this test protects that path from
+# silently regressing.
+
+_REAL_IMAGE = "ghcr.io/epoch-research/swe-bench.eval.x86_64.astropy__astropy-12907"
+
+
+def _real_image_present() -> bool:
+    if not _docker_available():
+        return False
+    try:
+        return subprocess.run(
+            ["docker", "image", "inspect", _REAL_IMAGE],
+            capture_output=True, timeout=10,
+        ).returncode == 0
+    except Exception:
+        return False
+
+
+@pytest.mark.skipif(not _real_image_present(), reason="real SWE-bench image not pulled locally")
+def test_offline_differential_reproduces_a_real_bug(tmp_path):
+    import json
+
+    from understudy.data.swebench import load_cases
+    from understudy.sandbox.runner import run_patched_script_in_container
+    from understudy.scoring.differential import score_differential
+
+    cases = load_cases()
+    case = next(c for c in cases if c.instance.instance_id == "astropy__astropy-12907")
+
+    script = _write_script(
+        tmp_path,
+        "import sys\n"
+        "import numpy as np\n"
+        "from astropy.modeling import models as m\n"
+        "from astropy.modeling.separable import separability_matrix\n"
+        "cm = m.Linear1D(10) & m.Linear1D(5)\n"
+        "result = separability_matrix(m.Pix2Sky_TAN() & cm)\n"
+        "expected = np.array([[True, False], [False, True]])\n"
+        "sys.exit(0 if np.array_equal(result[2:, 2:], expected) else 1)\n",
+    )
+
+    buggy = run_script_in_container(_REAL_IMAGE, script, timeout_s=90)
+    fixed = run_patched_script_in_container(_REAL_IMAGE, script, case.gold_patch, timeout_s=90)
+
+    result = score_differential(buggy, fixed)
+    assert result.reproduced is True
+    assert result.fails_on_buggy is True
+    assert result.passes_on_fixed is True
+
+    # No leftover images from the prepare/commit/rmi lifecycle.
+    leftover = subprocess.run(
+        ["docker", "images", "--filter", "reference=understudy-fixed-*", "-q"],
+        capture_output=True, timeout=10,
+    ).stdout.decode().strip()
+    assert leftover == ""

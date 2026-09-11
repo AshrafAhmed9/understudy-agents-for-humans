@@ -67,3 +67,41 @@ API (not mocked).
 The Strands `Agent(...)` wiring itself — tools are ready, the hook is ready,
 but assembling them into a live agent and running it is the first thing that
 needs credentials, so it wasn't done speculatively.
+
+## Kill gate: passed, on real data (Sep 12)
+
+`scripts/verify_kill_gate.py` proves the full pipeline end-to-end on a real
+SWE-bench Verified instance (`astropy__astropy-12907`), not a synthetic
+fixture:
+
+- 30 real instances fetched from the public `princeton-nlp/SWE-bench_Verified`
+  dataset via Hugging Face's datasets-server API — no credentials needed,
+  cached at `data/swebench_verified_sample.json`.
+- Confirmed the Epoch AI registry images are real and resolve
+  (`docker manifest inspect`, no full pull, on several instance IDs).
+- Pulled one image for real: 964MB, 78s.
+- Confirmed the documented convention exactly: working dir `/testbed`, conda
+  env `testbed` — this is the real image, not an assumption from the writeup.
+- Hand-authored a reproduction script from the real issue text (a genuine
+  astropy bug: nested `CompoundModel` separability). Ran it against the
+  unpatched image — **failed, as the bug predicts.** Applied the real gold
+  patch through a new offline-only path (`prepare_fixed_image` +
+  `run_patched_script_in_container`) and reran the identical script —
+  **passed.** `score_differential` correctly reports `reproduced=True`.
+
+This is a hand-authored script proving the infrastructure is honest, not an
+agent result — no model call was made, and none of this needed AWS credentials.
+
+One real design bug found and fixed while building this: applying the gold
+patch under the same read-only, no-network container used for untrusted
+script execution can't work (`git apply` needs to write). Fixed by splitting
+into two container lifecycles — a trusted prep step (writable, applies the
+patch, commits a new local image, always cleaned up after) and then the
+*exact same locked-down execution* used for the buggy run, against that
+image. Untrusted-code containment is never weakened; verified no leftover
+containers or images after the run.
+
+`understudy/data/swebench.py` is now the loader real evaluation work will
+use — `load_cases()` returns real `ScoringCase` objects, with the gold patch
+kept out of the agent-facing `Instance` type at the type-system level (the
+type has no field for it), not just by convention.
