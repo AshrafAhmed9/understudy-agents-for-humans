@@ -23,7 +23,8 @@ SOURCE_FILES = [
     "real_pipeline_10.json",
     "django_retry.json",
     "real_pipeline_batch2.json",
-    "cassette_refresh.json",  # last: same instances rerun with full cassette fields
+    "cassette_refresh.json",  # reruns with full cassette fields; later files win by instance_id
+    "cassette_backfill_batch2.json",
 ]
 
 BASELINES = {
