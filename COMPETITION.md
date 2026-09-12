@@ -260,7 +260,10 @@ the buffer on unfinished deployment work.
 - [ ] Public repo, recognized license, README, architecture, third-party attribution complete.
 - [ ] Description, public video ≤5:00, AWS Builder ID, track and testing instructions entered.
 - [ ] Judge access maintained through October 8; private credentials excluded from artifacts.
-- [ ] Three distinct factual Builder posts published and links entered if completed.
+- [x] Three distinct factual Builder posts published and links entered (2026-09-12):
+  1. https://builder.aws.com/post/3JEqtbSlofSpUSkuYMDm73jLAe3_p/bedrock-broke-on-my-account-so-i-ran-a-bug-verifier-agent-on-a-local-model-agentsforhumans
+  2. https://builder.aws.com/post/3JEr8cIG3wqYQRamZYdDkMcxwnY_p/a-naive-check-said-my-agent-was-right-88percent-of-the-time-it-was-right-19percent-agentsforhumans
+  3. https://builder.aws.com/post/3JEr9jwSX8sjhGSQb8sylsnG1n4_p/the-same-hook-that-stops-my-agent-from-bothering-you-also-stops-it-from-cheating-agentsforhumans
 - [ ] Recheck official rules, resources, gallery, and links on September 13 and 14.
 - [ ] Every remaining limitation is visible; no unsupported performance or adoption claim.
 

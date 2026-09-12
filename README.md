@@ -124,3 +124,8 @@ tracked in `COMPETITION.md`.
 
 Built for the AWS "Agents for Humans" hackathon, Professional Agents track. See
 `COMPETITION.md` for the rubric, the field analysis, and the full claims-to-proof table.
+
+Builder posts:
+1. [Bedrock broke on my account, so I ran a bug-verifier agent on a local model](https://builder.aws.com/post/3JEqtbSlofSpUSkuYMDm73jLAe3_p/bedrock-broke-on-my-account-so-i-ran-a-bug-verifier-agent-on-a-local-model-agentsforhumans)
+2. [A naive check said my agent was right 88% of the time. It was right 19%](https://builder.aws.com/post/3JEr8cIG3wqYQRamZYdDkMcxwnY_p/a-naive-check-said-my-agent-was-right-88percent-of-the-time-it-was-right-19percent-agentsforhumans)
+3. [The same hook that stops my agent from bothering you also stops it from cheating](https://builder.aws.com/post/3JEr9jwSX8sjhGSQb8sylsnG1n4_p/the-same-hook-that-stops-my-agent-from-bothering-you-also-stops-it-from-cheating-agentsforhumans)
