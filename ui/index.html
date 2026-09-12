@@ -126,9 +126,17 @@ button{font-family:inherit; cursor:pointer;}
 }
 .row-quiet:hover{border-color:var(--border); background:var(--surface-3);}
 .row-quiet .id{font-family:"IBM Plex Mono"; color:var(--ink-faint); width:150px; flex-shrink:0;}
-.row-quiet .verdict{margin-left:auto; font-family:"IBM Plex Mono"; font-size:11px;}
-.row-quiet .verdict.tax-reproduced{color:var(--good);}
-.row-quiet .verdict.tax-false_positive_unrelated_failure,.row-quiet .verdict.tax-semantic_inversion{color:var(--bad);}
+.row-quiet .verdict-dot{
+  margin-left:auto; width:6px; height:6px; border-radius:50%; flex-shrink:0;
+  background:var(--ink-faint); position:relative;
+}
+.row-quiet .verdict-dot.tax-reproduced{background:var(--good);}
+.row-quiet .verdict-dot.tax-false_positive_unrelated_failure,.row-quiet .verdict-dot.tax-semantic_inversion{background:var(--bad);}
+.row-quiet .verdict-dot[data-tip]:hover::after{
+  content:attr(data-tip); position:absolute; bottom:150%; right:-4px;
+  background:var(--ink); color:var(--bg); font-size:11px; padding:4px 8px; border-radius:6px;
+  white-space:nowrap; box-shadow:var(--shadow); z-index:5; font-family:"IBM Plex Sans";
+}
 
 .card-loud{
   border:1.5px solid var(--accent); border-radius:12px; padding:16px 18px; margin-block:10px;
@@ -369,7 +377,7 @@ DATA.cases.forEach(c=>{
     row.className = 'row-quiet';
     row.innerHTML = `<span class="id">${esc(c.instance_id)}</span>
       <span>${esc(c.repo)}</span>
-      <span class="verdict tax-${c.taxonomy}">${taxLabel(c.taxonomy)}</span>`;
+      <span class="verdict-dot tax-${c.taxonomy}" data-tip="${esc(taxLabel(c.taxonomy))}"></span>`;
     timeline.appendChild(row);
   }
 });
