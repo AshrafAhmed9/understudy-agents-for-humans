@@ -1,12 +1,11 @@
 # Architecture
 
 Status (2026-09-12): the execution and safety layer, the real triage loop, and the real
-scoring pipeline are built and verified end-to-end against real data — not a mock or a
-throwaway script (see DEV_README.md and COMPETITION.md's model-decision note). The model is
-local Ollama (`qwen2.5-coder:7b`), not Bedrock — AWS Bedrock access on this account is
-broken and Ashraf has ruled out paid APIs. The four UI screens are built and live. Nothing
-in this diagram is aspirational; every box either exists and is tested, or is explicitly
-marked not yet built.
+scoring pipeline are built and verified end-to-end against real data, not a mock or a
+throwaway script. The model is local Ollama (`qwen2.5-coder:7b`), not Bedrock — AWS
+Bedrock access on this account is broken, so the fallback is local inference rather than a
+paid API. The four UI screens are built and live. Nothing in this diagram is aspirational;
+every box either exists and is tested, or is explicitly marked not yet built.
 
 ```mermaid
 flowchart TD
@@ -70,7 +69,7 @@ flowchart TD
 
 **Real result on this pipeline, N=16 real SWE-bench Verified instances (2026-09-12): 3/16
 (19%) reproduced by the gold-patch differential**, vs. 14/16 (88%) a naive exit-code check
-would have wrongly claimed. See `results.json` and COMPETITION.md for the full breakdown.
+would have wrongly claimed. See `results.json` for the full breakdown.
 
 ## Trust boundaries
 
@@ -85,20 +84,20 @@ would have wrongly claimed. See `results.json` and COMPETITION.md for the full b
 3. **Untrusted code (the generated reproduction script) always runs under
    full lockdown**: no network, read-only root filesystem, capped memory/
    processes/user, host-enforced timeout that actually kills the container
-   (not just the CLI process — verified this distinction matters, see
-   DEV_README.md).
+   (not just the CLI process — that distinction matters, and is covered by
+   a dedicated test).
 4. **Applying the gold patch is a separate, trusted lifecycle** from
    executing untrusted code. It happens in a throwaway writable container
    that gets committed to a new image and then discarded; the untrusted
    script only ever runs afterward, under the same lockdown as the buggy
    run, against that image.
 
-## What still needs Ashraf
+## What's left
 
-The video recording, the 3 Builder posts (needs an AWS Builder ID), and final submission on
-Devpost. Everything else — the real triage loop, the real scoring pipeline, the eval data,
-the four UI screens, the fork (https://github.com/AshrafAhmed9/tqdm) with 3 real issues and
-3 real posted verdicts — is built. See `understudy/fork_demo/README.md`.
+The video recording and final submission on Devpost. Everything else — the real triage
+loop, the real scoring pipeline, the eval data, the four UI screens, the fork
+(https://github.com/AshrafAhmed9/tqdm) with 3 real issues and 3 real posted verdicts — is
+built. See `understudy/fork_demo/README.md`.
 
 **AgentCore deployment (Stream E) is confirmed blocked at the account level, not attempted
 further.** Verified 2026-09-12: even after attaching a working `bedrock-agentcore:*` IAM

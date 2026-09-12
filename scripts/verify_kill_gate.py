@@ -3,8 +3,8 @@ real issue text, real base_commit, real gold patch, real Docker image.
 
 This is a HAND-AUTHORED reproduction script, not agent output — it exists
 to prove the runner+sanitizer+scorer are honest before any generated script
-is trusted. See EXECUTION.md: "the runner and scorer must work before
-requesting generated scripts."
+is trusted: the runner and scorer must work before requesting generated
+scripts.
 """
 
 from pathlib import Path

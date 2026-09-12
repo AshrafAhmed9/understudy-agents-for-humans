@@ -3,9 +3,9 @@
 Deliberately separate from anything that calls a model: `run_eval` takes a
 `triage_fn` as a plain dependency, so this can be tested and used today with
 a synthetic or hand-authored triage function, and later pointed at the real
-Strands-backed one without changing anything here. See
-COMPETITION.md's evidence contract: publish failures alongside wins, and
-never let a live candidate result be confused with an offline-confirmed one.
+Strands-backed one without changing anything here. Evidence contract:
+publish failures alongside wins, and never let a live candidate result be
+confused with an offline-confirmed one.
 """
 
 from __future__ import annotations

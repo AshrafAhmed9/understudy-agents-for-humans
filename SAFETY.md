@@ -35,9 +35,12 @@ and, for the sandbox, a real Docker daemon.
   an always-fail, always-pass, import-error, or timed-out script can never
   be scored as a reproduction — this was a real flaw in an earlier version
   of this plan, caught and fixed before any evaluation ran.
-- **Never posts anywhere without explicit authorization.** No outbound
-  GitHub write path exists yet. Reading public issues is unauthenticated
-  and read-only; the only Docker registry access is pulling public images.
+- **Never posts anywhere without explicit authorization.** The one outbound
+  GitHub write path posts a verdict comment, and only against a repo the
+  operator controls (used for the disclosed fork demo; see
+  `understudy/fork_demo/README.md`). Reading public issues is
+  unauthenticated and read-only; the only Docker registry access is
+  pulling public images.
 
 ## Known limits, stated plainly
 
@@ -45,7 +48,8 @@ and, for the sandbox, a real Docker daemon.
   hostile code is perfectly safe to run. Defense in depth (no network, no
   privileges, no persistence, host-supervised kill) is real, but this is
   not a hardened multi-tenant execution service.
-- The agent's reasoning has never made a real model call as of this
-  writing — everything above is the execution/safety layer, verified
-  independently of whether the model behaves well or badly.
+- The execution and safety layer above was built and tested independently
+  of whether the model behaves well or badly — it holds regardless of
+  model quality, which matters because the model is a local 7B, not a
+  frontier one.
 - Confidence reported by the agent is not a calibrated probability.

@@ -1,6 +1,7 @@
 # Live fork demo
 
-Real, disclosed autonomous-posting proof for the hackathon (COMPETITION.md's C6). Fork:
+Real, disclosed autonomous-posting proof for the hackathon: a second ground truth against
+real, messy issues rather than a curated benchmark. Fork:
 https://github.com/AshrafAhmed9/tqdm
 
 Three real open tqdm issues (unmodified, copied with disclosure) were posted to the fork's

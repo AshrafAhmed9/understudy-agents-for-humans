@@ -3,7 +3,7 @@
 Unauthenticated (60 requests/hour, fine for a demo-sized poll) — reading a
 public repo's issues needs no credentials. Posting a comment does, and that
 path is intentionally not built here: it needs an explicit destination
-authorization from Ashraf (a token, a repo he controls) before it exists.
+authorization (a token, a repo the operator controls) before it exists.
 """
 
 from __future__ import annotations
@@ -22,9 +22,9 @@ USER_AGENT = "understudy-hackathon-project (read-only ingestion)"
 class RealIssue:
     """A real, unmodified public issue, captured with provenance.
 
-    Per COMPETITION.md's evidence contract: preserve the pre-resolution
-    text, the source URL, and the capture time, so nothing here can later be
-    confused with a seeded or fabricated case.
+    Evidence contract: preserve the pre-resolution text, the source URL,
+    and the capture time, so nothing here can later be confused with a
+    seeded or fabricated case.
     """
 
     repo: str

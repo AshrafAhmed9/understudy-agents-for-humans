@@ -1,7 +1,6 @@
 """Hostile-fixture proof: an import error, a timeout, an always-pass script and
 an always-fail script must never be scored as a reproduction. This is the
-test EXECUTION.md calls out as required before any generated script is
-trusted.
+test that must pass before any generated script is trusted.
 """
 
 from understudy.scoring.differential import score_differential

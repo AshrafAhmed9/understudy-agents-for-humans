@@ -1,6 +1,6 @@
 """Proves BeforeToolCallEvent actually fires and actually blocks a call in
 the pinned strands-agents version — not an assumption from a blog post.
-Required first-hour check from EXECUTION.md.
+This is the first thing to verify before building anything on top of it.
 """
 
 import pytest

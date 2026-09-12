@@ -8,8 +8,8 @@ construction time, not deferred to the first call — so building an Agent at
 all, even just to check that tools and hooks wire up correctly, reaches for
 Bedrock on an account with no credentials configured. For structural tests
 (tests/fake_model.py: NullModel) we pass a minimal Model subclass instead.
-The moment Ashraf has AWS access, running this for real is a one-line
-change: pass a real model in place of NullModel.
+The moment AWS access works, running this for real is a one-line change:
+pass a real model in place of NullModel.
 """
 
 from __future__ import annotations
@@ -67,9 +67,9 @@ def build_tools(repo_root: Path):
 def build_ollama_model(model_id: str = "qwen2.5-coder:7b", host: str = "http://localhost:11434"):
     """Real, zero-cost inference: local Ollama instead of Bedrock. AWS Bedrock
     access on this account is broken (ValidationException: Operation not
-    allowed, confirmed across a Free->Paid plan upgrade — see COMPETITION.md),
-    and Ashraf has ruled out any paid API. This is the only model wiring
-    actually used for the real pipeline."""
+    allowed, confirmed across a Free->Paid plan upgrade), and this project
+    has ruled out any paid API. This is the only model wiring actually used
+    for the real pipeline."""
     from strands.models.ollama import OllamaModel
 
     return OllamaModel(host, model_id=model_id, temperature=0.2)

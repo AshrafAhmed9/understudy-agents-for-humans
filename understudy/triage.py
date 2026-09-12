@@ -3,8 +3,8 @@ immutable Verdict + candidate script out.
 
 Model is qwen2.5-coder:7b via local Ollama — not Nova Lite. AWS Bedrock
 access on this account returns ValidationException: Operation not allowed,
-confirmed persistent across a Free->Paid plan upgrade (see COMPETITION.md),
-and Ashraf has ruled out any paid API. Local inference is the only path that
+confirmed persistent across a Free->Paid plan upgrade, and any paid API is
+ruled out. Local inference is the only path that
 is actually zero-cost. This is a deliberate, disclosed deviation from
 CLAUDE.md rule 6, not an oversight.
 

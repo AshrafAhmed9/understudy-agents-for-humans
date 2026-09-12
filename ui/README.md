@@ -4,7 +4,7 @@
 It's a static page: all data is the real `results.json` at the repo root, embedded inline
 at build time. No model or Docker call happens from this page (CLAUDE.md rule 7).
 
-Live copy: https://claude.ai/code/artifact/076c03d5-f79f-4e4a-8970-7ee4e46079e4
+Live copy: https://claude.ai/code/artifact/c815b20d-8b74-495a-a833-2456982b311c
 
 To rebuild after a new eval run:
 

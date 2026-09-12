@@ -118,8 +118,8 @@ def test_syntax_error_detected_as_script_crash():
 def test_prompts_warn_about_old_python():
     # Regression guard: django__django-10097's testbed runs Python 3.5.6, and
     # the model kept generating f-strings across every repair attempt because
-    # nothing told it the interpreter was that old (see COMPETITION.md,
-    # 2026-09-12). Losing this instruction silently reintroduces a 4/4
+    # nothing told it the interpreter was that old (found 2026-09-12).
+    # Losing this instruction silently reintroduces a 4/4
     # systematic failure on old-Python instances.
     from understudy.triage import PROMPT_TEMPLATE, REPAIR_TEMPLATE
 

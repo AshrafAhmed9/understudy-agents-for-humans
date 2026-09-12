@@ -3,7 +3,7 @@
 **It watches a repo, verifies bug reports by actually running them, and is only allowed to
 interrupt you five times a day.**
 
-Live demo, four screens, real data: https://claude.ai/code/artifact/076c03d5-f79f-4e4a-8970-7ee4e46079e4
+Live demo, four screens, real data: https://claude.ai/code/artifact/c815b20d-8b74-495a-a833-2456982b311c
 
 ## What it does
 
@@ -59,7 +59,7 @@ fixable from inside the account.
 This project has a hard $0 budget, so the fallback wasn't a paid API. It was local
 inference. The honest cost of that: a 7B local model underperforms a frontier model on this
 task. That wasn't assumed away; it was measured (the table above), and it's the finding this
-project leads with instead of hiding. Full decision history is in `COMPETITION.md`.
+project leads with instead of hiding.
 
 ## Architecture
 
@@ -117,13 +117,12 @@ real posted verdict comments (see `understudy/fork_demo/`).
 
 Not yet done: those verdicts were posted by a manually-triggered script, not a scheduled
 AgentCore + EventBridge deployment. That's blocked at the account level, same story as the
-Bedrock access issue above. The SWE-bench eval also hasn't scaled past 16 instances. Both
-tracked in `COMPETITION.md`.
+Bedrock access issue above (see AgentCore deployment note in `ARCHITECTURE.md`). The
+SWE-bench eval also hasn't scaled past 16 instances.
 
 ## Competition
 
-Built for the AWS "Agents for Humans" hackathon, Professional Agents track. See
-`COMPETITION.md` for the rubric, the field analysis, and the full claims-to-proof table.
+Built for the AWS "Agents for Humans" hackathon, Professional Agents track.
 
 Builder posts:
 1. [Bedrock broke on my account, so I ran a bug-verifier agent on a local model](https://builder.aws.com/post/3JEqtbSlofSpUSkuYMDm73jLAe3_p/bedrock-broke-on-my-account-so-i-ran-a-bug-verifier-agent-on-a-local-model-agentsforhumans)

@@ -1,6 +1,6 @@
 """Durable interruption budget: a SQLite ledger, not an in-memory counter.
 
-Per COMPETITION.md / EXECUTION.md: each proactive human interruption costs
+Each proactive human interruption costs
 exactly one integer unit. No harm x urgency / confidence scoring (the inputs
 aren't calibrated and division at zero confidence is undefined) and no
 refunds — dismissing a delivered notification does not undo it.

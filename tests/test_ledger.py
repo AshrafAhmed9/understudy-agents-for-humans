@@ -1,4 +1,4 @@
-"""Acceptance criteria from EXECUTION.md: six concurrent requests yield at
+"""Acceptance criteria: six concurrent requests yield at
 most five deliveries; duplicates use one slot; restart retains spending and
 queue; midnight uses the configured timezone; resolution does not refund;
 uncertain sends do not duplicate; exhausted items remain accessible.

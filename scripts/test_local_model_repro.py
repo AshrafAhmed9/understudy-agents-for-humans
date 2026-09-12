@@ -90,7 +90,7 @@ def probe_instance(instance_id: str, script_path: str = "/tmp/local_model_repro.
 
     first_crashed = is_script_crash(result1.stderr)
 
-    # MAX_ATTEMPTS = 3 total, per EXECUTION.md's repro loop cap.
+    # MAX_ATTEMPTS = 3 total: the repro loop's repair cap.
     while attempts < 3 and is_script_crash(final_result.stderr):
         repair_prompt = REPAIR_TEMPLATE.format(script=final_script, stderr=final_result.stderr[:2000])
         raw_n = ask(repair_prompt)
