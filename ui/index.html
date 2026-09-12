@@ -67,6 +67,9 @@ button{font-family:inherit; cursor:pointer;}
 }
 .repo-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--good); animation:pulse 2.4s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+@media (prefers-reduced-motion: reduce){
+  .repo-pill .dot{animation:none;}
+}
 .topbar .spacer{flex:1;}
 
 .budget{display:flex; align-items:center; gap:10px;}
@@ -177,7 +180,7 @@ pre.codeblock{
 .evidence-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:22px; margin-bottom:22px;}
 @media (max-width:760px){.evidence-grid{grid-template-columns:1fr;}}
 .panel{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow);}
-.panel h3{font-size:15px; margin-bottom:14px;}
+.panel h2{font-size:15px; margin-bottom:14px;}
 .panel .field-label{margin-top:0;}
 
 .compare-bars{display:flex; flex-direction:column; gap:12px;}
@@ -237,14 +240,14 @@ pre.codeblock{
   </div>
 
   <div class="tabs" role="tablist" id="tabs">
-    <button class="tab" role="tab" data-screen="watch" aria-selected="true"><span class="letter">A</span>The Watch</button>
-    <button class="tab" role="tab" data-screen="receipts" aria-selected="false"><span class="letter">B</span>Receipts</button>
-    <button class="tab" role="tab" data-screen="evidence" aria-selected="false"><span class="letter">C</span>Evidence</button>
-    <button class="tab" role="tab" data-screen="inbox" aria-selected="false"><span class="letter">D</span>Inbox</button>
+    <button class="tab" role="tab" id="tab-watch" aria-controls="screen-watch" data-screen="watch" aria-selected="true"><span class="letter">A</span>The Watch</button>
+    <button class="tab" role="tab" id="tab-receipts" aria-controls="screen-receipts" data-screen="receipts" aria-selected="false"><span class="letter">B</span>Receipts</button>
+    <button class="tab" role="tab" id="tab-evidence" aria-controls="screen-evidence" data-screen="evidence" aria-selected="false"><span class="letter">C</span>Evidence</button>
+    <button class="tab" role="tab" id="tab-inbox" aria-controls="screen-inbox" data-screen="inbox" aria-selected="false"><span class="letter">D</span>Inbox</button>
   </div>
 
   <!-- SCREEN A -->
-  <section class="screen active" id="screen-watch">
+  <section class="screen active" id="screen-watch" role="tabpanel" aria-labelledby="tab-watch">
     <div class="counterfactual">
       <div class="big" id="watch-headline">16 issues triaged.</div>
       <div class="sub" id="watch-sub">Real reproduction attempts, not summaries.</div>
@@ -255,7 +258,7 @@ pre.codeblock{
   </section>
 
   <!-- SCREEN B -->
-  <section class="screen" id="screen-receipts">
+  <section class="screen" id="screen-receipts" role="tabpanel" aria-labelledby="tab-receipts">
     <div class="receipt-layout">
       <div class="receipt-list" id="receipt-list"></div>
       <div id="receipt-detail"></div>
@@ -263,28 +266,28 @@ pre.codeblock{
   </section>
 
   <!-- SCREEN C -->
-  <section class="screen" id="screen-evidence">
+  <section class="screen" id="screen-evidence" role="tabpanel" aria-labelledby="tab-evidence">
     <div class="headline-stat">
       <span class="num" id="ev-rate">19%</span>
       <span class="vs">gold-patch reproduction rate on 16 real SWE-bench Verified instances — naive exit-code scoring would have claimed <span class="old" id="ev-naive">88%</span></span>
     </div>
     <div class="evidence-grid">
       <div class="panel">
-        <h3>Reproduction rate vs. published baselines</h3>
+        <h2>Reproduction rate vs. published baselines</h2>
         <div class="compare-bars" id="compare-bars"></div>
       </div>
       <div class="panel">
-        <h3>Failure taxonomy (16 cases)</h3>
+        <h2>Failure taxonomy (16 cases)</h2>
         <div class="taxo-list" id="taxo-list"></div>
       </div>
     </div>
     <div class="panel">
-      <h3>Why the gap between 88% and 19% matters</h3>
+      <h2>Why the gap between 88% and 19% matters</h2>
       <p style="font-size:13.5px;color:var(--ink-muted);max-width:68ch;">
         A script that exits non-zero is not evidence of a real bug — an <code>ImportError</code> or a wrong
         API call also exits non-zero. The gold-patch differential is the only check this project trusts:
         run the script at <code>base_commit</code> (must fail), then again with the dataset's answer-key
-        patch applied (must pass). Eleven of these sixteen "reproductions" were scripts that failed for
+        patch applied (must pass). Eleven of these sixteen “reproductions” were scripts that failed for
         reasons unrelated to the reported bug and kept failing after the real fix — proof the failure had
         nothing to do with the patch. One inverted the bug's own example, mistaking the buggy output shown
         in the issue for the correct one. The model never sees the gold patch; only this offline scorer does.
@@ -293,7 +296,7 @@ pre.codeblock{
   </section>
 
   <!-- SCREEN D -->
-  <section class="screen" id="screen-inbox">
+  <section class="screen" id="screen-inbox" role="tabpanel" aria-labelledby="tab-inbox">
     <div class="inbox-grid" id="inbox-grid"></div>
   </section>
 
@@ -425,8 +428,10 @@ DATA.cases.forEach((c,i)=>{
 renderReceipt(DATA.cases.find(c=>c.taxonomy==='reproduced') || DATA.cases[0]);
 
 // ---- Screen C: Evidence ----
-document.getElementById('ev-rate').textContent = Math.round(DATA.summary.reproduction_rate*100)+'%';
-document.getElementById('ev-naive').textContent = Math.round(DATA.summary.naive_exit_code_rate*100)+'%';
+const pctWhole = new Intl.NumberFormat('en-US', {style:'percent', maximumFractionDigits:0});
+const pctOneDp = new Intl.NumberFormat('en-US', {style:'percent', maximumFractionDigits:1});
+document.getElementById('ev-rate').textContent = pctWhole.format(DATA.summary.reproduction_rate);
+document.getElementById('ev-naive').textContent = pctWhole.format(DATA.summary.naive_exit_code_rate);
 
 const compareData = [
   {name:'GPT-4 zero-shot', v:DATA.baselines.gpt4_zero_shot},
@@ -442,7 +447,7 @@ compareData.forEach(d=>{
   row.className = 'compare-row';
   row.innerHTML = `<span class="name">${d.name}</span>
     <span class="track"><span class="fill" style="width:${(d.v/maxV*100).toFixed(0)}%;background:${d.mine?'var(--accent)':'var(--ink-faint)'}"></span></span>
-    <span class="val">${(d.v*100).toFixed(1)}%</span>`;
+    <span class="val">${pctOneDp.format(d.v)}</span>`;
   barsEl.appendChild(row);
 });
 
