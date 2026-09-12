@@ -1,5 +1,0 @@
-pydantic<3,>=2.13
-strands-agents==1.55.1
-
-[dev]
-pytest>=8.0
