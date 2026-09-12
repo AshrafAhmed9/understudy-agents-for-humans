@@ -63,22 +63,9 @@ project leads with instead of hiding. Full decision history is in `COMPETITION.m
 
 ## Architecture
 
-`diagrams/understudy_architecture.excalidraw` has the full picture, including where the two
-real numbers above come from and what the hook actually blocks. `ARCHITECTURE.md` has the
-mermaid version and the trust-boundary writeup in text. Short version:
+![Understudy architecture: issue text through triage, the anti-cheat and budget hook, the locked-down sandbox, the gold-patch differential, into the live UI](diagrams/architecture.png)
 
-```
-issue text ──► triage (Ollama, repo-read tools, git BLOCKED) ──► candidate script
-                                                                        │
-                                                          locked-down container
-                                                     (--network none, ro rootfs, nobody,
-                                                      512m/1cpu, host-enforced timeout)
-                                                                        │
-                                                          offline gold-patch differential
-                                                          (agent never sees the gold patch)
-                                                                        │
-                                                          results.json ──► four UI screens
-```
+`ARCHITECTURE.md` has the mermaid version and the full trust-boundary writeup in text.
 
 Built with the Strands Agents SDK (`Agent`, `@tool`, `HookProvider`/`BeforeToolCallEvent`),
 Pydantic-frozen schemas as the contract between every stage, and Docker for isolated
