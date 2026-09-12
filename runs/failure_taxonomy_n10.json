@@ -1,0 +1,25 @@
+{
+  "summary": {
+    "n": 10,
+    "naive_reproduced": 8,
+    "gold_reproduced": 1
+  },
+  "taxonomy": {
+    "reproduced": [
+      "astropy__astropy-13033"
+    ],
+    "false_positive_unrelated_failure": [
+      "astropy__astropy-13236",
+      "astropy__astropy-13398",
+      "astropy__astropy-13977",
+      "astropy__astropy-14096",
+      "django__django-10097",
+      "django__django-10554",
+      "django__django-10914"
+    ],
+    "under_detected_no_signal": [
+      "astropy__astropy-12907",
+      "django__django-10880"
+    ]
+  }
+}

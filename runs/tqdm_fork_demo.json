@@ -1,0 +1,32 @@
+[
+  {
+    "upstream_issue": "1827",
+    "fork_url": "https://github.com/AshrafAhmed9/tqdm/issues/1",
+    "title": "`python -m tqdm --log` with a missing or invalid level raises `IndexError` / `AttributeError`",
+    "script": "import sys\nfrom tqdm import cli\n\ndef main():\n    try:\n        cli.main()\n    except (cli.TqdmKeyError, cli.TqdmTypeError) as e:\n        print(\"Caught an exception: {}\".format(e))\n        return 1\n    except IndexError:\n        print(\"--log is the last parameter: argv[log_idx + 1] exceeds the bounds\")\n        return 1\n    except AttributeError:\n        print(\"--log NOTALEVEL: getattr(logging, logLevel) fails\")\n        return 1\n    return 0\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "\r0it [00:00, ?it/s]\r0it [00:00, ?it/s]\n",
+    "attempts": 1
+  },
+  {
+    "upstream_issue": "1826",
+    "fork_url": "https://github.com/AshrafAhmed9/tqdm/issues/2",
+    "title": "Invalid hex `colour='#00ff0g'` raises `ValueError` instead of the unknown-colour warning",
+    "script": "from io import StringIO\nfrom tqdm import tqdm\n\ntry:\n    list(tqdm(range(1), file=StringIO(), colour=\"#00ff0g\", mininterval=0))\nexcept ValueError as e:\n    if \"invalid literal for int() with base 16\" in str(e):\n        print(\"Bug found: ValueError raised when passing an invalid hex colour code.\")\n        exit(1)\n    else:\n        raise\nelse:\n    print(\"No bug found.\")\n    exit(0)",
+    "exit_code": 1,
+    "stdout": "Bug found: ValueError raised when passing an invalid hex colour code.\n",
+    "stderr": "",
+    "attempts": 1
+  },
+  {
+    "upstream_issue": "1810",
+    "fork_url": "https://github.com/AshrafAhmed9/tqdm/issues/3",
+    "title": "`tqdm.pandas`: empty DataFrame raises `ZeroDivisionError`, and `total=` only applies once",
+    "script": "import pandas as pd\nfrom tqdm import tqdm\n\ntqdm.pandas()\ndf = pd.DataFrame(columns=[\"a\", \"b\"])\ntry:\n    df.progress_apply(lambda column: column)\nexcept ZeroDivisionError:\n    print(\"Empty DataFrame bug found\")\n    exit(1)\n\noutput = StringIO()\ntqdm.pandas(\n    file=output, ascii=True, leave=True, total=123,\n    mininterval=0, miniters=1\n)\n\npd.Series([10, 20, 30]).progress_apply(lambda value: value + 1)\nfirst_line = output.getvalue().replace(\"\\r\", \"\\n\").strip().split(\"\\n\")[-1]\noutput.seek(0)\noutput.truncate(0)\npd.Series([10, 20, 30, 40]).progress_apply(lambda value: value + 1)\nsecond_line = output.getvalue().replace(\"\\r\", \"\\n\").strip().split(\"\\n\")[-1]\n\nif \"3/123\" in first_line and \"4/4\" in second_line:\n    print(\"total consumed after the first call bug found\")\n    exit(1)\n\nexit(0)",
+    "exit_code": 1,
+    "stdout": "Empty DataFrame bug found\n",
+    "stderr": "",
+    "attempts": 1
+  }
+]

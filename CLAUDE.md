@@ -45,8 +45,11 @@ One sentence: **before you spend time on a bug report, Understudy tries to run i
 5. **Use `/bin/bash -lc`, never `/bin/sh`.** `sh` is dash on these images and `source`
    fails. This is a recurring, documented SWE-bench trap.
 
-6. **Model is Nova Lite by default.** Total inference budget is about $2. Do not switch to
-   Sonnet without asking Ashraf first.
+6. **Model is local Ollama (`qwen2.5-coder:7b`), not Nova Lite.** Superseded 2026-09-12:
+   Bedrock access is broken on this account (`ValidationException: Operation not allowed`,
+   persisted through a full Free-to-Paid upgrade) and Ashraf will not spend money on a paid
+   API. See COMPETITION.md's model-decision note for the empirical check that justified
+   this. Do not switch to Bedrock, Nova Lite, or any paid API without asking Ashraf first.
 
 7. **Every screen renders from a JSON file.** The UI never calls a model or Docker
    synchronously. The live agent's only job is to write that file.

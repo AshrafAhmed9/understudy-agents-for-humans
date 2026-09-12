@@ -1,10 +1,12 @@
 # Architecture
 
-Status: the execution and safety layer below is built and verified end-to-end
-against real data (see DEV_README.md). The agent reasoning loop is wired but
-has never made a model call — that needs AWS credentials Ashraf hasn't
-provided yet. Nothing in this diagram is aspirational; every box either
-exists and is tested, or is explicitly marked not yet built.
+Status (2026-09-12): the execution and safety layer, the real triage loop, and the real
+scoring pipeline are built and verified end-to-end against real data — not a mock or a
+throwaway script (see DEV_README.md and COMPETITION.md's model-decision note). The model is
+local Ollama (`qwen2.5-coder:7b`), not Bedrock — AWS Bedrock access on this account is
+broken and Ashraf has ruled out paid APIs. The four UI screens are built and live. Nothing
+in this diagram is aspirational; every box either exists and is tested, or is explicitly
+marked not yet built.
 
 ```mermaid
 flowchart TD
@@ -13,7 +15,13 @@ flowchart TD
         SWE[SWE-bench Verified\npublic dataset, no auth\nunderstudy/data/swebench.py]
     end
 
-    subgraph Agent["Strands Agent — wired, not yet invoked live"]
+    subgraph Triage["understudy/triage.py — real, model-backed"]
+        GEN[OllamaGenerator\nqwen2.5-coder:7b, local, $0]
+        LOOP[generate -> run -> repair\nup to 3 attempts]
+        GEN --> LOOP
+    end
+
+    subgraph Agent["Strands Agent — wired, tools available"]
         A[understudy/agent.py]
         T1[read_file]
         T2[search_source]
@@ -37,25 +45,32 @@ flowchart TD
         PREP[prepare_fixed_image\noffline-only, trusted,\napplies gold patch]
     end
 
-    subgraph Scoring["understudy/scoring/"]
+    subgraph Scoring["understudy/scoring/ + understudy/eval/"]
         DIFF[differential.py\ngold-patch differential\nfails-on-buggy AND passes-on-fixed]
+        AGG["run_eval / build_results.py\nresults.json + taxonomy"]
+        DIFF --> AGG
     end
 
     subgraph Output
         REC[receipts.py\natomic JSON writes\nruns/&lt;id&gt;.json]
-        UI["Four screens — NOT YET BUILT\nWatch / Receipt / Evidence / Inbox"]
+        UI["ui/index.html — four screens, live\nWatch / Receipts / Evidence / Inbox"]
+        AGG --> UI
     end
 
     GH --> A
-    SWE --> SAN
+    SWE --> LOOP
     A --> T1 --> SAN
     A --> T2 --> SAN
-    A -->|candidate script| RUN
+    LOOP -->|candidate script| RUN
     RUN -->|ExecResult| DIFF
     PREP -->|fixed image| RUN
     DIFF --> REC
-    REC -.->|not yet built| UI
+    REC --> UI
 ```
+
+**Real result on this pipeline, N=16 real SWE-bench Verified instances (2026-09-12): 3/16
+(19%) reproduced by the gold-patch differential**, vs. 14/16 (88%) a naive exit-code check
+would have wrongly claimed. See `results.json` and COMPETITION.md for the full breakdown.
 
 ## Trust boundaries
 
@@ -80,7 +95,16 @@ flowchart TD
 
 ## What still needs Ashraf
 
-AWS credentials (nothing above has made a real model call), a decision on
-which repo to fork for the live autonomous-posting demo, and everything
-downstream: the eval matrix at scale, the four UI screens against real
-results, AgentCore deployment, the video, the Builder posts.
+The video recording, the 3 Builder posts (needs an AWS Builder ID), and final submission on
+Devpost. Everything else — the real triage loop, the real scoring pipeline, the eval data,
+the four UI screens, the fork (https://github.com/AshrafAhmed9/tqdm) with 3 real issues and
+3 real posted verdicts — is built. See `understudy/fork_demo/README.md`.
+
+**AgentCore deployment (Stream E) is confirmed blocked at the account level, not attempted
+further.** Verified 2026-09-12: even after attaching a working `bedrock-agentcore:*` IAM
+policy directly to the user, every AgentCore control-plane call returns
+`AccessDeniedException`. That's the same shape as the Bedrock `ValidationException` — an
+account-wide restriction sitting above IAM (an SCP or permissions boundary), not a
+permissions gap we can fix from inside the account. Two independent Bedrock-family services
+blocked the same way is enough evidence to stop chasing this and disclose it as a known
+limitation rather than spend more of the remaining time on it.

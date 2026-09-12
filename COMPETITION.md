@@ -52,6 +52,93 @@ conflict; do not budget against unreceived credits. Having an existing AWS accou
 itself grounds to conclude ineligibility. Keep Nova Lite and the approximately $2 inference
 cap. No Sonnet switch or paid deployment is assumed. Budget alerts are not spending caps.
 
+**Model decision, superseding the Nova Lite line above (2026-09-12):** Bedrock access on
+Ashraf's account is broken — `ValidationException: Operation not allowed`, persisting
+through IAM checks, the retired model-access page, the Marketplace-gate theory, and a full
+Free-to-Paid plan upgrade (confirmed by two AWS emails). Same failure recurred in a past
+project, so this looks account-level, not self-service-fixable in the time remaining. Ashraf
+has ruled out any paid API — the $0 constraint is non-negotiable. Real inference now runs on
+**local Ollama, `qwen2.5-coder:7b`**, genuinely free, no account, no card. This is a
+deliberate deviation, not an oversight — CLAUDE.md rule 6 should be read as superseded by
+this note.
+
+Empirical check before committing: ran the real `triage()` + `run_eval` pipeline (not a
+throwaway script) against 4 real cached SWE-bench Verified instances
+(astropy-12907, astropy-13033, astropy-13236, django-10097), 3-attempt repair cap.
+**Result: 1/4 reproduced (25%)** — see `runs/real_pipeline_check.json`. That beats GPT-4
+zero-shot (3.6%) and lands near SWE-Agent-class methods (15.9-18.5%) that also use repo
+access + execution feedback, on an N too small to trust precisely. Failure modes seen:
+semantic inversion (mistook the buggy output shown in the issue for the expected one),
+a no-op script that ran clean without exercising the bug, and a repeated syntax mistake the
+repair loop never escaped (model doesn't reliably know the target Python's f-string quoting
+rules). These are genuine capability gaps, not harness bugs, and go in the failure taxonomy
+as-is. Decision: proceed with `qwen2.5-coder:7b`; report the reproduction rate against
+published baselines rather than in a vacuum, and report the local-model-vs-cost tradeoff
+itself as a finding — nobody else in the field will have that ablation.
+
+**Scaled to 10 real instances (2026-09-12), before the fix below: 1/10 reproduced (10%)**,
+but 4/4 django instances errored outright (script never became syntactically valid in 3
+attempts) versus 1/6 on astropy. Root-caused, not assumed: `django__django-10097`'s testbed
+runs **Python 3.5.6** (`docker run ... python --version`) — f-strings don't exist there, and
+the model kept generating them across every repair attempt because nothing told it the
+interpreter was that old. Fixed by adding an explicit instruction to both `PROMPT_TEMPLATE`
+and `REPAIR_TEMPLATE` in `understudy/triage.py` to avoid 3.6+ syntax. Retried the same 4
+django instances: script-error rate dropped from 4/4 to 1/4. **Combined 10-instance result
+after the fix: 1/10 reproduced (10%), 1/10 script errors** (`runs/real_pipeline_10.json` +
+`runs/django_retry.json`). The remaining django failures now run cleanly but don't reproduce
+the bug — a real capability ceiling, not a harness defect, and goes in the taxonomy as-is.
+This is the number to report for now: 10% vs GPT-4 zero-shot's 3.6%, on N=10, expect it to
+move as N grows toward the planned 20-30.
+
+**⭐ The number that validates C1, with real data (2026-09-12):** naive exit-code-only
+scoring — "the script exited non-zero, so the bug reproduced" — on these same 10 real runs
+would have reported **8/10 (80%) reproduced**. The gold-patch differential shows the true
+number is **1/10 (10%)**. The other 7 "reproductions" are scripts that fail on `base_commit`
+for reasons unrelated to the reported bug (wrong API assumption, import error) and **keep
+failing after the real fix is applied** — proof the failure has nothing to do with the
+patch. Taxonomy over the 10 cases, saved to `runs/failure_taxonomy_n10.json`:
+- **reproduced (gold differential): 1** — astropy-13033
+- **false_positive_unrelated_failure (fails before AND after the fix): 7** — astropy-13236,
+  13398, 13977, 14096, django-10097, 10554, 10914
+- **under_detected_no_signal (passes before AND after — script never triggers the bug): 2**
+  — astropy-12907, django-10880
+
+This is exactly the C1 concern the adversarial pass raised in the abstract, now demonstrated
+with real numbers instead of an argument: 80% vs 10%, an 8x inflation from the naive method
+this submission explicitly rejected. This single comparison is one of the strongest, most
+concrete claims in the whole submission and belongs in the video and Screen C, not buried
+here.
+
+**Scaled to 16 real instances (2026-09-12):** added 6 more (astropy-14182, 14309, 14365;
+django-10973, 10999, 11066) via `runs/real_pipeline_batch2.json`. **Combined result:
+3/16 reproduced (18.75%)** — astropy-13033, astropy-14182, astropy-14309. Still clearly above
+the 3.6% zero-shot floor. One instance (django-10973) errored in this batch after crashing 3
+times, but a standalone rerun of the identical prompt produced a clean, non-crashing script —
+this is LLM sampling variance (temperature=0.2, not 0), not a new systematic bug; the plan
+already names non-determinism as a known demo/eval risk. Aggregated into `results.json` via
+`scripts/build_results.py`, which merges all run files and reclassifies every case into the
+taxonomy above — that script is now the canonical source for Stream D's screens.
+
+**Updated C1 validation number, N=16:** naive exit-code scoring would report **14/16 (88%)
+reproduced**. The real gold-patch differential says **3/16 (19%)**. Full taxonomy: 3
+reproduced, 11 false_positive_unrelated_failure, 1 under_detected_no_signal, 1
+semantic_inversion (astropy-12907 — the script's notion of "expected" is backwards: it
+encoded the buggy output as correct, so it passes before the fix and fails after). This is
+the number and the taxonomy to use everywhere going forward — 88% vs 19%, not 80% vs 10%.
+
+**Stream D built (2026-09-12): live demo URL — https://claude.ai/code/artifact/076c03d5-f79f-4e4a-8970-7ee4e46079e4**
+The four screens from §5, all rendering from the committed `results.json` (built by
+`scripts/build_results.py`), no synchronous model or Docker call from the page (rule 7).
+Screen A (Watch): counterfactual headline, silence bar, inverted timeline — the 3 reproduced
+cases break the ribbon as full cards, the other 13 are thin quiet rows. Screen B (Receipts):
+real issue text, real generated script, real container stdout/stderr for both the buggy and
+gold-patched runs, per case. Screen C (Evidence): the 19%-vs-88% headline stat, the baseline
+comparison bars, the taxonomy breakdown. Screen D (Inbox): interactive decision cards for the
+3 reproduced cases with a draining budget-pip meter (client-side only — no backend deployed
+yet, this is not the AgentCore endpoint from Stream E). This is real evidence rendering, not
+a mockup; it is currently a static/interactive artifact, not yet wired to a live scheduled
+agent run (that is Stream E, which needs Ashraf's AWS/GitHub credentials).
+
 Working judge access must last through judging, not just video recording. A static replay
 is useful, but identify it as replay and provide a working test build plus instructions.
 Never imply that prerecorded JSON is a currently running cloud deployment.
@@ -284,6 +371,37 @@ Priority is a reasoned judgment, not a quantified uplift in win probability.
    and accepted tasks. Assign an integration owner and a separate evidence/presentation
    owner so helpers do not all build isolated features. Each handoff includes a runnable
    artifact, acceptance evidence and unresolved failures. Unassigned work is not coverage.
+
+9. **Scope decision on the 30-case real-issue study (2026-09-12):** investigated building
+   this. It requires a genuinely separate execution path from the SWE-bench work already
+   done — checking out an arbitrary real repo at an arbitrary pinned revision and building a
+   working environment for it, since Epoch's rebuilt image registry only covers the 500
+   curated SWE-bench Verified instances, not arbitrary GitHub issues. That's real,
+   non-trivial infrastructure (dependency resolution varies per repo, no pre-built image to
+   pull), not a small extension of `understudy/ingest/github.py` (which only reads issue
+   text, never executes anything). Given the remaining time and that a half-built version
+   of this would produce unreliable environment-setup failures indistinguishable from real
+   triage failures — polluting exactly the kind of evidence this project is built to keep
+   honest — this is recorded as a known gap rather than attempted partially. If Ashraf wants
+   to prioritize it, the concrete next step is a `understudy/sandbox/generic_checkout.py`
+   that clones a repo, checks out a commit, and attempts a best-effort environment build
+   (requirements.txt / pyproject / setup.py, in that order), accepting that some real repos
+   will simply fail to build — which itself becomes an honestly-reported limitation rather
+   than blocking the whole study.
+
+**Fork demo built (2026-09-12):** forked tqdm/tqdm (31k stars, pushed the day before —
+genuinely active, pure Python, no compiled deps) to
+https://github.com/AshrafAhmed9/tqdm. Copied 3 real open upstream issues in unmodified with
+disclosure (#1827 CLI --log crash, #1826 invalid hex colour, #1810 empty-DataFrame
+ZeroDivisionError) as fork issues #1-3. Built a real (non-SWE-bench) container environment
+for tqdm main and ran real triage against all three with `qwen2.5-coder:7b`: 2/3 produced a
+genuine candidate reproduction (#1826, #1810 — clean scripts, real evidence in stdout), #1827
+didn't reproduce on this attempt. Posted real verdict comments to all three fork issues,
+honestly disclosed as live-candidate (no gold patch exists for an unfixed upstream bug, so
+these are correctly never scored as `reproduced`) and as manually triggered, not yet on an
+EventBridge schedule. Full writeup: `understudy/fork_demo/README.md`, raw results
+`runs/tqdm_fork_demo.json`. This is real evidence for the "it acts on its own" claim, short
+of full autonomy (that needs Stream E, blocked on AWS access — see below).
 
 Source for bonus and artifact-based judging:
 [official rules, sections 4 and 6](https://agentsforhumans.devpost.com/rules), rechecked

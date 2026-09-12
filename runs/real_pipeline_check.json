@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "attempts": 1,
+      "error": null,
+      "instance_id": "astropy__astropy-12907",
+      "live_confidence": 0.4,
+      "live_status": "not_reproduced",
+      "offline_fails_on_buggy": false,
+      "offline_passes_on_fixed": false,
+      "offline_reproduced": false,
+      "repo": "astropy/astropy"
+    },
+    {
+      "attempts": 1,
+      "error": null,
+      "instance_id": "astropy__astropy-13033",
+      "live_confidence": 0.6,
+      "live_status": "candidate_reproduction",
+      "offline_fails_on_buggy": true,
+      "offline_passes_on_fixed": true,
+      "offline_reproduced": true,
+      "repo": "astropy/astropy"
+    },
+    {
+      "attempts": 1,
+      "error": null,
+      "instance_id": "astropy__astropy-13236",
+      "live_confidence": 0.6,
+      "live_status": "candidate_reproduction",
+      "offline_fails_on_buggy": true,
+      "offline_passes_on_fixed": false,
+      "offline_reproduced": false,
+      "repo": "astropy/astropy"
+    },
+    {
+      "attempts": 3,
+      "error": null,
+      "instance_id": "django__django-10097",
+      "live_confidence": 0.0,
+      "live_status": "error",
+      "offline_fails_on_buggy": true,
+      "offline_passes_on_fixed": false,
+      "offline_reproduced": false,
+      "repo": "django/django"
+    }
+  ],
+  "summary": {
+    "errors": 0,
+    "label": "real-ollama-pipeline-check",
+    "no_candidate_produced": 0,
+    "reproduced": 1,
+    "reproduction_rate": 0.25,
+    "total_cases": 4
+  }
+}

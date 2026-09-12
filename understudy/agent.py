@@ -64,6 +64,17 @@ def build_tools(repo_root: Path):
     return [read_file, search_source, escalate_to_human]
 
 
+def build_ollama_model(model_id: str = "qwen2.5-coder:7b", host: str = "http://localhost:11434"):
+    """Real, zero-cost inference: local Ollama instead of Bedrock. AWS Bedrock
+    access on this account is broken (ValidationException: Operation not
+    allowed, confirmed across a Free->Paid plan upgrade — see COMPETITION.md),
+    and Ashraf has ruled out any paid API. This is the only model wiring
+    actually used for the real pipeline."""
+    from strands.models.ollama import OllamaModel
+
+    return OllamaModel(host, model_id=model_id, temperature=0.2)
+
+
 def build_agent(repo_root: Path, ledger: Ledger, tz_name: str, model=None) -> Agent:
     """Construct the agent. Pass a real Model to actually run it, or a
     NullModel (tests/fake_model.py) to build and inspect the wiring without

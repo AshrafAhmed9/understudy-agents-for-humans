@@ -15,17 +15,17 @@ import pytest
 
 from understudy.data.swebench import load_cases
 from understudy.eval.results import run_eval
-from understudy.schemas import ReproSpec, ScoringCase, TriageResult, Verdict
+from understudy.schemas import Instance, ReproSpec, ScoringCase, TriageResult, Verdict
 
 
-def _insufficient_info(case: ScoringCase) -> TriageResult:
+def _insufficient_info(instance: Instance) -> TriageResult:
     return TriageResult(
         verdict=Verdict(status="insufficient_info", confidence=0.0, evidence="not enough context", attempts=0),
         final_spec=None,
     )
 
 
-def _always_raises(case: ScoringCase) -> TriageResult:
+def _always_raises(instance: Instance) -> TriageResult:
     raise RuntimeError("simulated triage failure")
 
 
@@ -84,7 +84,7 @@ def _real_image_present() -> bool:
 
 @pytest.mark.skipif(not _real_image_present(), reason="real SWE-bench image not pulled locally")
 def test_harness_end_to_end_against_a_real_image():
-    def hand_authored_triage(case: ScoringCase) -> TriageResult:
+    def hand_authored_triage(instance: Instance) -> TriageResult:
         return TriageResult(
             verdict=Verdict(status="candidate_reproduction", confidence=0.9, evidence="hand-authored", attempts=1),
             final_spec=ReproSpec(script=REAL_REPRO_SCRIPT, attempt=1),

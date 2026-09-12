@@ -18,9 +18,12 @@ from understudy.data.swebench import epoch_image_ref
 from understudy.receipts import atomic_write_json
 from understudy.sandbox.runner import run_patched_script_in_container, run_script_in_container
 from understudy.scoring.differential import score_differential
-from understudy.schemas import ScoringCase, TriageResult
+from understudy.schemas import Instance, ScoringCase, TriageResult
 
-TriageFn = Callable[[ScoringCase], TriageResult]
+# Instance, never ScoringCase: triage_fn must not be able to reach
+# case.gold_patch. See CLAUDE.md rule 2 - the agent must never see the gold
+# patch, only the offline scorer below may.
+TriageFn = Callable[[Instance], TriageResult]
 
 
 @dataclass
@@ -34,6 +37,15 @@ class CaseResult:
     offline_fails_on_buggy: bool | None
     offline_passes_on_fixed: bool | None
     error: str | None = None
+    # Cassette fields (CLAUDE.md rule 8): enough to replay and to render
+    # Screen B (the receipt) without calling a model or Docker again.
+    issue_text: str | None = None
+    final_script: str | None = None
+    evidence: str | None = None
+    buggy_stdout: str | None = None
+    buggy_stderr: str | None = None
+    fixed_stdout: str | None = None
+    fixed_stderr: str | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -46,6 +58,13 @@ class CaseResult:
             "offline_fails_on_buggy": self.offline_fails_on_buggy,
             "offline_passes_on_fixed": self.offline_passes_on_fixed,
             "error": self.error,
+            "issue_text": self.issue_text,
+            "final_script": self.final_script,
+            "evidence": self.evidence,
+            "buggy_stdout": self.buggy_stdout,
+            "buggy_stderr": self.buggy_stderr,
+            "fixed_stdout": self.fixed_stdout,
+            "fixed_stderr": self.fixed_stderr,
         }
 
 
@@ -94,7 +113,7 @@ def run_eval(
 
     for case in cases:
         try:
-            result = triage_fn(case)
+            result = triage_fn(case.instance)
         except Exception as exc:  # noqa: BLE001 - record it, keep going
             run.cases.append(
                 CaseResult(
@@ -115,6 +134,7 @@ def run_eval(
         offline_fails = None
         offline_passes = None
         error = None
+        buggy_stdout = buggy_stderr = fixed_stdout = fixed_stderr = None
 
         if result.final_spec is not None:
             try:
@@ -130,6 +150,8 @@ def run_eval(
                 offline_reproduced = score.reproduced
                 offline_fails = score.fails_on_buggy
                 offline_passes = score.passes_on_fixed
+                buggy_stdout, buggy_stderr = buggy.stdout, buggy.stderr
+                fixed_stdout, fixed_stderr = fixed.stdout, fixed.stderr
             except Exception as exc:  # noqa: BLE001
                 error = f"offline scoring raised: {exc}"
 
@@ -144,6 +166,13 @@ def run_eval(
                 offline_fails_on_buggy=offline_fails,
                 offline_passes_on_fixed=offline_passes,
                 error=error,
+                issue_text=case.instance.issue_text,
+                final_script=result.final_spec.script if result.final_spec else None,
+                evidence=result.verdict.evidence,
+                buggy_stdout=buggy_stdout,
+                buggy_stderr=buggy_stderr,
+                fixed_stdout=fixed_stdout,
+                fixed_stderr=fixed_stderr,
             )
         )
 

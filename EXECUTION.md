@@ -2,7 +2,10 @@
 
 Read `COMPETITION.md` and `AGENTS.md`. Use parallel implementation streams with available help. Integrate a
 working vertical slice early; do not wait until end of day to discover interface failures.
-Model: Nova Lite. Inference ceiling: approximately $2. No Sonnet or paid deployment assumed.
+Model: local Ollama (`qwen2.5-coder:7b`), superseding the Nova Lite line originally here —
+see COMPETITION.md's 2026-09-12 model-decision note. Bedrock access on this account is
+broken (ValidationException: Operation not allowed, persisted through a Free-to-Paid plan
+upgrade) and Ashraf has ruled out any paid API. No Sonnet or paid deployment assumed.
 
 ## Critical path and integration order
 

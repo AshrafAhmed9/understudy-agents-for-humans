@@ -74,6 +74,12 @@ def swebench_command(workdir: str = "/testbed", conda_env: str = "testbed") -> s
     )
 
 
+def plain_command(workdir: str = "/testbed") -> str:
+    """For images with no conda env — a plain pip-installed checkout (e.g.
+    the tqdm fork demo, not a SWE-bench image). Still bash -lc, not sh."""
+    return f"cd {workdir} && exec python /repro/repro.py"
+
+
 def run_script_in_container(
     image: str,
     script_path: Path,

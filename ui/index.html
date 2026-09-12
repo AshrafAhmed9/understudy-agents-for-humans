@@ -1,0 +1,492 @@
+<title>Understudy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef0e9; --surface:#ffffff; --surface-2:#e3e6db; --surface-3:#d7dbcc;
+  --ink:#1a1d17; --ink-muted:#5c6156; --ink-faint:#8a9080;
+  --border:#cfd3c4; --accent:#b9752a; --accent-ink:#5b3210;
+  --good:#2f7d52; --good-bg:#e2f0e6;
+  --bad:#a8452f; --bad-bg:#f5e4de;
+  --quiet:#8b9184;
+  --shadow: 0 1px 2px rgba(20,23,15,0.06), 0 4px 14px rgba(20,23,15,0.05);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14170f; --surface:#1b1f16; --surface-2:#23271b; --surface-3:#2c3122;
+    --ink:#edf0e6; --ink-muted:#a3a996; --ink-faint:#767c68;
+    --border:#333828; --accent:#e0a24f; --accent-ink:#2a1a06;
+    --good:#5fbd8a; --good-bg:#1c3327;
+    --bad:#e2796a; --bad-bg:#3a2620;
+    --quiet:#5d6252;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14170f; --surface:#1b1f16; --surface-2:#23271b; --surface-3:#2c3122;
+  --ink:#edf0e6; --ink-muted:#a3a996; --ink-faint:#767c68;
+  --border:#333828; --accent:#e0a24f; --accent-ink:#2a1a06;
+  --good:#5fbd8a; --good-bg:#1c3327;
+  --bad:#e2796a; --bad-bg:#3a2620;
+  --quiet:#5d6252;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  padding-inline:20px; padding-block:0 40px;
+  font-size:15px; line-height:1.5;
+}
+h1,h2,h3{font-family:"Fraunces", Georgia, serif; text-wrap:balance; margin:0;}
+code, pre, .mono{font-family:"IBM Plex Mono", ui-monospace, monospace;}
+a{color:inherit;}
+button{font-family:inherit; cursor:pointer;}
+
+.shell{max-width:1080px; margin:0 auto;}
+
+/* ---------- Top chrome ---------- */
+.topbar{
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  padding-block:18px; border-bottom:1px solid var(--border);
+}
+.brand{display:flex; align-items:baseline; gap:10px;}
+.brand .mark{
+  width:10px; height:10px; border-radius:2px; background:var(--accent);
+  display:inline-block; box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.brand h1{font-size:22px; font-weight:600; letter-spacing:-0.01em;}
+.repo-pill{
+  font-family:"IBM Plex Mono"; font-size:12.5px; color:var(--ink-muted);
+  background:var(--surface-2); border:1px solid var(--border);
+  padding:4px 10px; border-radius:100px; display:flex; align-items:center; gap:7px;
+}
+.repo-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--good); animation:pulse 2.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.topbar .spacer{flex:1;}
+
+.budget{display:flex; align-items:center; gap:10px;}
+.budget-label{font-size:12px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.06em;}
+.pips{display:flex; gap:5px;}
+.pip{
+  width:14px; height:14px; border-radius:50%;
+  border:1.5px solid var(--accent); position:relative;
+  transition:background .2s;
+}
+.pip.spent{background:var(--accent);}
+.pip[data-tip]:hover::after{
+  content:attr(data-tip); position:absolute; bottom:130%; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:var(--bg); font-size:11px; padding:4px 8px; border-radius:6px;
+  white-space:nowrap; box-shadow:var(--shadow); z-index:5;
+}
+
+/* ---------- Tabs ---------- */
+.tabs{display:flex; gap:2px; padding-block:14px; border-bottom:1px solid var(--border); flex-wrap:wrap;}
+.tab{
+  padding:8px 16px; border-radius:8px; border:1px solid transparent;
+  font-size:13.5px; font-weight:500; color:var(--ink-muted);
+  display:flex; align-items:center; gap:8px; background:transparent;
+}
+.tab .letter{
+  font-family:"IBM Plex Mono"; font-size:11px; color:var(--ink-faint);
+  border:1px solid var(--border); border-radius:4px; width:18px; height:18px;
+  display:flex; align-items:center; justify-content:center;
+}
+.tab[aria-selected="true"]{background:var(--surface); border-color:var(--border); color:var(--ink); box-shadow:var(--shadow);}
+.tab[aria-selected="true"] .letter{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+.tab:hover:not([aria-selected="true"]){color:var(--ink);}
+
+.screen{display:none; padding-block:28px;}
+.screen.active{display:block;}
+
+/* ---------- Screen A: Watch ---------- */
+.counterfactual{margin-bottom:26px;}
+.counterfactual .big{font-size:clamp(28px,4vw,42px); font-weight:600; line-height:1.15;}
+.counterfactual .sub{color:var(--ink-muted); font-size:14.5px; margin-top:6px;}
+.silence-bar{
+  display:flex; height:14px; border-radius:100px; overflow:hidden; margin-top:18px;
+  border:1px solid var(--border);
+}
+.silence-bar .seg-quiet{background:var(--surface-3); flex:1;}
+.silence-bar .seg-loud{background:var(--accent); width:14%;}
+.silence-caption{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-faint); margin-top:6px;}
+
+.timeline{display:flex; flex-direction:column; gap:3px; margin-top:26px;}
+.row-quiet{
+  display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:6px;
+  font-size:12.5px; color:var(--ink-muted); background:var(--surface-2);
+  cursor:pointer; border:1px solid transparent;
+}
+.row-quiet:hover{border-color:var(--border); background:var(--surface-3);}
+.row-quiet .id{font-family:"IBM Plex Mono"; color:var(--ink-faint); width:150px; flex-shrink:0;}
+.row-quiet .verdict{margin-left:auto; font-family:"IBM Plex Mono"; font-size:11px;}
+.row-quiet .verdict.tax-reproduced{color:var(--good);}
+.row-quiet .verdict.tax-false_positive_unrelated_failure,.row-quiet .verdict.tax-semantic_inversion{color:var(--bad);}
+
+.card-loud{
+  border:1.5px solid var(--accent); border-radius:12px; padding:16px 18px; margin-block:10px;
+  background:var(--surface); box-shadow:var(--shadow);
+}
+.card-loud .kicker{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); font-weight:600;}
+.card-loud h3{font-size:17px; margin-block:4px 6px;}
+.card-loud p{color:var(--ink-muted); font-size:13.5px; margin:0;}
+
+/* ---------- Screen B: Receipts ---------- */
+.receipt-layout{display:grid; grid-template-columns:230px 1fr; gap:22px;}
+@media (max-width:720px){.receipt-layout{grid-template-columns:1fr;}}
+.receipt-list{display:flex; flex-direction:column; gap:4px; max-height:70vh; overflow:auto;}
+.receipt-item{
+  text-align:left; border:1px solid var(--border); background:var(--surface);
+  border-radius:8px; padding:9px 11px; font-size:12.5px;
+}
+.receipt-item[aria-current="true"]{border-color:var(--accent); background:var(--good-bg); box-shadow:var(--shadow);}
+.receipt-item .rid{font-family:"IBM Plex Mono"; font-weight:500;}
+.receipt-item .rtax{display:block; font-size:10.5px; color:var(--ink-muted); margin-top:3px;}
+
+.receipt-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow);}
+.receipt-head{padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+.receipt-head h2{font-size:19px;}
+.verdict-badge{
+  font-size:11px; font-weight:600; padding:4px 10px; border-radius:100px; text-transform:uppercase; letter-spacing:.04em;
+  height:fit-content;
+}
+.verdict-badge.tax-reproduced{background:var(--good-bg); color:var(--good);}
+.verdict-badge.tax-false_positive_unrelated_failure,.verdict-badge.tax-semantic_inversion,.verdict-badge.tax-under_detected_no_signal{background:var(--bad-bg); color:var(--bad);}
+.receipt-body{padding:18px 20px; display:flex; flex-direction:column; gap:16px;}
+.field-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:6px;}
+.issue-text{
+  font-size:13px; color:var(--ink-muted); max-height:150px; overflow:auto;
+  background:var(--surface-2); border-radius:8px; padding:10px 12px; white-space:pre-wrap;
+}
+pre.codeblock{
+  background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+  padding:12px 14px; font-size:12px; overflow:auto; max-height:220px; margin:0;
+}
+.exec-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:560px){.exec-grid{grid-template-columns:1fr;}}
+.exec-col .field-label{display:flex; justify-content:space-between; align-items:center;}
+.exec-col .field-label .tag{font-family:"IBM Plex Mono"; font-size:10.5px;}
+.stat-row{display:flex; gap:18px; font-size:12.5px; color:var(--ink-muted); flex-wrap:wrap;}
+.stat-row b{color:var(--ink); font-weight:600;}
+
+/* ---------- Screen C: Evidence ---------- */
+.evidence-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:22px; margin-bottom:22px;}
+@media (max-width:760px){.evidence-grid{grid-template-columns:1fr;}}
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow);}
+.panel h3{font-size:15px; margin-bottom:14px;}
+.panel .field-label{margin-top:0;}
+
+.compare-bars{display:flex; flex-direction:column; gap:12px;}
+.compare-row{display:grid; grid-template-columns:110px 1fr 46px; align-items:center; gap:10px;}
+.compare-row .name{font-size:12.5px; color:var(--ink-muted);}
+.compare-row .track{height:10px; background:var(--surface-2); border-radius:100px; overflow:hidden;}
+.compare-row .fill{height:100%; border-radius:100px;}
+.compare-row .val{font-family:"IBM Plex Mono"; font-size:12px; text-align:right; font-variant-numeric:tabular-nums;}
+
+.headline-stat{display:flex; align-items:baseline; gap:16px; margin-bottom:18px;}
+.headline-stat .num{font-family:"Fraunces"; font-size:44px; font-weight:600;}
+.headline-stat .vs{color:var(--ink-faint); font-size:13px;}
+.headline-stat .old{text-decoration:line-through; color:var(--bad);}
+
+.taxo-list{display:flex; flex-direction:column; gap:10px;}
+.taxo-item{display:flex; align-items:center; gap:10px;}
+.taxo-swatch{width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+.taxo-item .name{font-size:13px; flex:1;}
+.taxo-item .count{font-family:"IBM Plex Mono"; font-size:13px; font-variant-numeric:tabular-nums;}
+
+/* ---------- Screen D: Inbox ---------- */
+.inbox-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
+.decision-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px 18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px;
+  min-height:230px;
+}
+.decision-card.resolved{opacity:.45;}
+.decision-card .verdict-line{font-family:"Fraunces"; font-size:17px; font-weight:600;}
+.decision-card .why{font-size:12.5px; color:var(--ink-muted);}
+.decision-card .trace{
+  font-size:11px; background:var(--surface-2); border-radius:6px; padding:8px 10px;
+  max-height:80px; overflow:auto; flex:1;
+}
+.decision-card .meta{font-size:11px; color:var(--ink-faint); font-family:"IBM Plex Mono";}
+.decision-actions{display:flex; gap:8px; margin-top:auto;}
+.btn{
+  border:1px solid var(--border); background:var(--surface-2); border-radius:7px;
+  padding:7px 11px; font-size:12px; font-weight:500; color:var(--ink);
+}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+.btn:disabled{opacity:.4; cursor:default;}
+.empty-note{color:var(--ink-faint); font-size:13px; padding:30px 0; text-align:center;}
+
+.footnote{margin-top:34px; padding-top:16px; border-top:1px solid var(--border); font-size:12px; color:var(--ink-faint);}
+</style>
+
+<div class="shell">
+  <div class="topbar">
+    <div class="brand"><span class="mark"></span><h1>Understudy</h1></div>
+    <div class="repo-pill"><span class="dot"></span>astropy/astropy · django/django (fork) — next poll in <span id="poll-clock">4:12</span></div>
+    <div class="spacer"></div>
+    <div class="budget">
+      <span class="budget-label">Budget today</span>
+      <div class="pips" id="pips"></div>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-screen="watch" aria-selected="true"><span class="letter">A</span>The Watch</button>
+    <button class="tab" role="tab" data-screen="receipts" aria-selected="false"><span class="letter">B</span>Receipts</button>
+    <button class="tab" role="tab" data-screen="evidence" aria-selected="false"><span class="letter">C</span>Evidence</button>
+    <button class="tab" role="tab" data-screen="inbox" aria-selected="false"><span class="letter">D</span>Inbox</button>
+  </div>
+
+  <!-- SCREEN A -->
+  <section class="screen active" id="screen-watch">
+    <div class="counterfactual">
+      <div class="big" id="watch-headline">16 issues triaged. You were interrupted twice.</div>
+      <div class="sub">~1h 52m of attention not spent, at 7 min/triage — real reproduction attempts, not summaries.</div>
+      <div class="silence-bar"><div class="seg-quiet"></div><div class="seg-loud"></div></div>
+      <div class="silence-caption"><span>14 handled silently</span><span>2 escalated</span></div>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- SCREEN B -->
+  <section class="screen" id="screen-receipts">
+    <div class="receipt-layout">
+      <div class="receipt-list" id="receipt-list"></div>
+      <div id="receipt-detail"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN C -->
+  <section class="screen" id="screen-evidence">
+    <div class="headline-stat">
+      <span class="num" id="ev-rate">19%</span>
+      <span class="vs">gold-patch reproduction rate on 16 real SWE-bench Verified instances — naive exit-code scoring would have claimed <span class="old" id="ev-naive">88%</span></span>
+    </div>
+    <div class="evidence-grid">
+      <div class="panel">
+        <h3>Reproduction rate vs. published baselines</h3>
+        <div class="compare-bars" id="compare-bars"></div>
+      </div>
+      <div class="panel">
+        <h3>Failure taxonomy (16 cases)</h3>
+        <div class="taxo-list" id="taxo-list"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Why the gap between 88% and 19% matters</h3>
+      <p style="font-size:13.5px;color:var(--ink-muted);max-width:68ch;">
+        A script that exits non-zero is not evidence of a real bug — an <code>ImportError</code> or a wrong
+        API call also exits non-zero. The gold-patch differential is the only check this project trusts:
+        run the script at <code>base_commit</code> (must fail), then again with the dataset's answer-key
+        patch applied (must pass). Eleven of these sixteen "reproductions" were scripts that failed for
+        reasons unrelated to the reported bug and kept failing after the real fix — proof the failure had
+        nothing to do with the patch. One inverted the bug's own example, mistaking the buggy output shown
+        in the issue for the correct one. The model never sees the gold patch; only this offline scorer does.
+      </p>
+    </div>
+  </section>
+
+  <!-- SCREEN D -->
+  <section class="screen" id="screen-inbox">
+    <div class="inbox-grid" id="inbox-grid"></div>
+  </section>
+
+  <div class="footnote">Rendered entirely from a committed <code>results.json</code> — 16 real SWE-bench Verified instances, run through the real sandbox + gold-patch differential pipeline described in the README. No model or container call happens in this page. Local model: qwen2.5-coder:7b via Ollama.</div>
+</div>
+
+<script>
+const DATA = {"generated_from": ["real_pipeline_10.json", "django_retry.json", "real_pipeline_batch2.json", "cassette_refresh.json"], "model": "qwen2.5-coder:7b (local Ollama)", "summary": {"n": 16, "reproduced": 3, "reproduction_rate": 0.1875, "naive_exit_code_reproduced": 14, "naive_exit_code_rate": 0.875, "script_errors": 3}, "baselines": {"gpt4_zero_shot": 0.036, "aider": 0.127, "swe_agent": 0.159, "swe_agent_plus": 0.185}, "taxonomy_counts": {"semantic_inversion": 1, "reproduced": 3, "false_positive_unrelated_failure": 11, "under_detected_no_signal": 1}, "cases": [{"attempts": 1, "buggy_stderr": "", "buggy_stdout": "The separability matrix is correct for nested CompoundModels.\n", "error": null, "evidence": "The separability matrix is correct for nested CompoundModels.\n", "final_script": "from astropy.modeling import models as m\nfrom astropy.modeling.separable import separability_matrix\n\ncm = m.Linear1D(10) & m.Linear1D(5)\nnested_cm = m.Pix2Sky_TAN() & cm\n\nexpected_matrix = [[True, True, False, False],\n                   [True, True, False, False],\n                   [False, False, True,  True],\n                   [False, False, True,  True]]\n\nactual_matrix = separability_matrix(nested_cm)\n\nif (actual_matrix != expected_matrix).any():\n    print(\"The separability matrix is incorrect for nested CompoundModels.\")\n    exit(1)\nelse:\n    print(\"The separability matrix is correct for nested CompoundModels.\")\n    exit(0)", "fixed_stderr": "", "fixed_stdout": "The separability matrix is incorrect for nested CompoundModels.\n", "instance_id": "astropy__astropy-12907", "issue_text": "Modeling's `separability_matrix` does not compute separability correctly for nested CompoundModels\nConsider the following model:\r\n\r\n```python\r\nfrom astropy.modeling import models as m\r\nfrom astropy.modeling.separable import separability_matrix\r\n\r\ncm = m.Linear1D(10) & m.Linear1D(5)\r\n```\r\n\r\nIt's separability matrix as you might expect is a diagonal:\r\n\r\n```python\r\n>>> separability_matrix(cm)\r\narray([[ True, False],\r\n       [False,  True]])\r\n```\r\n\r\nIf I make the model more complex:\r\n```python\r\n>>> separability_matrix(m.Pix2Sky_TAN() & m.Linear1D(10) & m.Linear1D(5))\r\narray([[ True,  True, False, False],\r\n       [ True,  True, False, False],\r\n       [False, False,  True, False],\r\n       [False, False, False,  True]])\r\n```\r\n\r\nThe output matrix is again, as expected, the outputs and inputs to the linear models are separable and independent of each other.\r\n\r\nIf however, I nest these compound models:\r\n```python\r\n>>> separability_matrix(m.Pix2Sky_TAN() & cm)\r\narray([[ True,  True, False, False],\r\n       [ True,  True, False, False],\r\n       [False, False,  True,  True],\r\n       [False, False,  True,  True]])\r\n```\r\nSuddenly the inputs and outputs are no longer separable?\r\n\r\nThis feels like a bug to me, but I might be missing something?\n", "live_confidence": 0.4, "live_status": "not_reproduced", "offline_fails_on_buggy": false, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "astropy/astropy", "taxonomy": "semantic_inversion", "source_run": "cassette_refresh.json"}, {"attempts": 1, "buggy_stderr": "", "buggy_stdout": "Misleading exception when required column check fails.\n", "error": null, "evidence": "Misleading exception when required column check fails.\n", "final_script": "import numpy as np\nfrom astropy.time import Time\nfrom astropy.timeseries import TimeSeries\n\ntime = Time(np.arange(100000, 100003), format='jd')\nts = TimeSeries(time=time, data={\"flux\": [99.9, 99.8, 99.7]})\nts._required_columns = [\"time\", \"flux\"]\ntry:\n    ts.remove_column(\"flux\")\nexcept ValueError as e:\n    if \"expected 'time' as the first columns but found 'time'\" in str(e):\n        print(\"Misleading exception when required column check fails.\")\n        exit(1)\nexit(0)", "fixed_stderr": "", "fixed_stdout": "", "instance_id": "astropy__astropy-13033", "issue_text": "TimeSeries: misleading exception when required column check fails.\n<!-- This comments are hidden when you submit the issue,\r\nso you do not need to remove them! -->\r\n\r\n<!-- Please be sure to check out our contributing guidelines,\r\nhttps://github.com/astropy/astropy/blob/main/CONTRIBUTING.md .\r\nPlease be sure to check out our code of conduct,\r\nhttps://github.com/astropy/astropy/blob/main/CODE_OF_CONDUCT.md . -->\r\n\r\n<!-- Please have a search on our GitHub repository to see if a similar\r\nissue has already been posted.\r\nIf a similar issue is closed, have a quick look to see if you are satisfied\r\nby the resolution.\r\nIf not please go ahead and open an issue! -->\r\n\r\n<!-- Please check that the development version still produces the same bug.\r\nYou can install development version with\r\npip install git+https://github.com/astropy/astropy\r\ncommand. -->\r\n\r\n### Description\r\n<!-- Provide a general description of the bug. -->\r\n\r\nFor a `TimeSeries` object that has additional required columns (in addition to `time`), when codes mistakenly try to remove a required column, the exception it produces is misleading.\r\n\r\n### Expected behavior\r\n<!-- What did you expect to happen. -->\r\nAn exception that informs the users required columns are missing.\r\n\r\n### Actual behavior\r\nThe actual exception message is confusing:\r\n`ValueError: TimeSeries object is invalid - expected 'time' as the first columns but found 'time'`\r\n\r\n### Steps to Reproduce\r\n<!-- Ideally a code example could be provided so we can run it ourselves. -->\r\n<!-- If you are pasting code, use triple backticks (```) around\r\nyour code snippet. -->\r\n<!-- If necessary, sanitize your screen output to be pasted so you do not\r\nreveal secrets like tokens and passwords. -->\r\n\r\n```python\r\nfrom astropy.time import Time\r\nfrom astropy.timeseries import TimeSeries\r\n\r\ntime=Time(np.arange(100000, 100003), format='jd')\r\nts = TimeSeries(time=time, data = {\"flux\": [99.9, 99.8, 99.7]})\r\nts._required_columns = [\"time\", \"flux\"]                                   \r\nts.remove_column(\"flux\")\r\n\r\n```\r\n\r\n### System Details\r\n<!-- Even if you do not think this is necessary, it is useful information for the maintainers.\r\nPlease run the following snippet and paste the output below:\r\nimport platform; print(platform.platform())\r\nimport sys; print(\"Python\", sys.version)\r\nimport numpy; print(\"Numpy\", numpy.__version__)\r\nimport erfa; print(\"pyerfa\", erfa.__version__)\r\nimport astropy; print(\"astropy\", astropy.__version__)\r\nimport scipy; print(\"Scipy\", scipy.__version__)\r\nimport matplotlib; print(\"Matplotlib\", matplotlib.__version__)\r\n-->\r\n```\r\nWindows-10-10.0.22000-SP0\r\nPython 3.9.10 | packaged by conda-forge | (main, Feb  1 2022, 21:21:54) [MSC v.1929 64 bit (AMD64)]\r\nNumpy 1.22.3\r\npyerfa 2.0.0.1\r\nastropy 5.0.3\r\nScipy 1.8.0\r\nMatplotlib 3.5.1\r\n```\n", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": true, "offline_reproduced": true, "repo": "astropy/astropy", "taxonomy": "reproduced", "source_run": "cassette_refresh.json"}, {"attempts": 1, "error": null, "instance_id": "astropy__astropy-13236", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "astropy/astropy", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_10.json"}, {"attempts": 3, "error": null, "instance_id": "astropy__astropy-13398", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "astropy/astropy", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_10.json"}, {"attempts": 2, "error": null, "instance_id": "astropy__astropy-13977", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "astropy/astropy", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_10.json"}, {"attempts": 1, "error": null, "instance_id": "astropy__astropy-14096", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "astropy/astropy", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_10.json"}, {"attempts": 1, "error": null, "instance_id": "astropy__astropy-14182", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": true, "offline_reproduced": true, "repo": "astropy/astropy", "taxonomy": "reproduced", "source_run": "real_pipeline_batch2.json"}, {"attempts": 1, "error": null, "instance_id": "astropy__astropy-14309", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": true, "offline_reproduced": true, "repo": "astropy/astropy", "taxonomy": "reproduced", "source_run": "real_pipeline_batch2.json"}, {"attempts": 3, "error": null, "instance_id": "astropy__astropy-14365", "live_confidence": 0.0, "live_status": "error", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "astropy/astropy", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_batch2.json"}, {"attempts": 1, "buggy_stderr": "", "buggy_stdout": "Invalid URL: Username and/or password not properly encoded.\n", "error": null, "evidence": "Invalid URL: Username and/or password not properly encoded.\n", "final_script": "import re\nfrom urllib.parse import urlparse\n\ndef validate_url(url):\n    try:\n        result = urlparse(url)\n        if all([result.username, result.password]):\n            username = result.username.replace('%', '%25')\n            password = result.password.replace('%', '%25')\n            encoded_url = url.replace(result.username + ':' + result.password, username + ':' + password)\n            if encoded_url == url:\n                print(\"Invalid URL: Username and/or password not properly encoded.\")\n                return False\n        return True\n    except ValueError:\n        print(\"Invalid URL format.\")\n        return False\n\nif __name__ == \"__main__\":\n    test_urls = [\n        \"http://foo/bar@example.com\",\n        \"http://user:pass@domain.com/path?query=value\"\n    ]\n    \n    for url in test_urls:\n        if not validate_url(url):\n            exit(1)\n    exit(0)", "fixed_stderr": "", "fixed_stdout": "Invalid URL: Username and/or password not properly encoded.\n", "instance_id": "django__django-10097", "issue_text": "Make URLValidator reject invalid characters in the username and password\nDescription\n\t \n\t\t(last modified by Tim Bell)\n\t \nSince #20003, core.validators.URLValidator accepts URLs with usernames and passwords. RFC 1738 section 3.1 requires \"Within the user and password field, any \":\", \"@\", or \"/\" must be encoded\"; however, those characters are currently accepted without being %-encoded. That allows certain invalid URLs to pass validation incorrectly. (The issue originates in Diego Perini's \u200bgist, from which the implementation in #20003 was derived.)\nAn example URL that should be invalid is http://foo/bar@example.com; furthermore, many of the test cases in tests/validators/invalid_urls.txt would be rendered valid under the current implementation by appending a query string of the form ?m=foo@example.com to them.\nI note Tim Graham's concern about adding complexity to the validation regex. However, I take the opposite position to Danilo Bargen about invalid URL edge cases: it's not fine if invalid URLs (even so-called \"edge cases\") are accepted when the regex could be fixed simply to reject them correctly. I also note that a URL of the form above was encountered in a production setting, so that this is a genuine use case, not merely an academic exercise.\nPull request: \u200bhttps://github.com/django/django/pull/10097\nMake URLValidator reject invalid characters in the username and password\nDescription\n\t \n\t\t(last modified by Tim Bell)\n\t \nSince #20003, core.validators.URLValidator accepts URLs with usernames and passwords. RFC 1738 section 3.1 requires \"Within the user and password field, any \":\", \"@\", or \"/\" must be encoded\"; however, those characters are currently accepted without being %-encoded. That allows certain invalid URLs to pass validation incorrectly. (The issue originates in Diego Perini's \u200bgist, from which the implementation in #20003 was derived.)\nAn example URL that should be invalid is http://foo/bar@example.com; furthermore, many of the test cases in tests/validators/invalid_urls.txt would be rendered valid under the current implementation by appending a query string of the form ?m=foo@example.com to them.\nI note Tim Graham's concern about adding complexity to the validation regex. However, I take the opposite position to Danilo Bargen about invalid URL edge cases: it's not fine if invalid URLs (even so-called \"edge cases\") are accepted when the regex could be fixed simply to reject them correctly. I also note that a URL of the form above was encountered in a production setting, so that this is a genuine use case, not merely an academic exercise.\nPull request: \u200bhttps://github.com/django/django/pull/10097\n", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "django/django", "taxonomy": "false_positive_unrelated_failure", "source_run": "cassette_refresh.json"}, {"attempts": 3, "error": null, "instance_id": "django__django-10554", "live_confidence": 0.0, "live_status": "error", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "django/django", "taxonomy": "false_positive_unrelated_failure", "source_run": "django_retry.json"}, {"attempts": 1, "error": null, "instance_id": "django__django-10880", "live_confidence": 0.4, "live_status": "not_reproduced", "offline_fails_on_buggy": false, "offline_passes_on_fixed": true, "offline_reproduced": false, "repo": "django/django", "taxonomy": "under_detected_no_signal", "source_run": "django_retry.json"}, {"attempts": 1, "error": null, "instance_id": "django__django-10914", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "django/django", "taxonomy": "false_positive_unrelated_failure", "source_run": "django_retry.json"}, {"attempts": 3, "error": null, "instance_id": "django__django-10973", "live_confidence": 0.0, "live_status": "error", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "django/django", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_batch2.json"}, {"attempts": 1, "error": null, "instance_id": "django__django-10999", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "django/django", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_batch2.json"}, {"attempts": 1, "error": null, "instance_id": "django__django-11066", "live_confidence": 0.6, "live_status": "candidate_reproduction", "offline_fails_on_buggy": true, "offline_passes_on_fixed": false, "offline_reproduced": false, "repo": "django/django", "taxonomy": "false_positive_unrelated_failure", "source_run": "real_pipeline_batch2.json"}]};
+
+function esc(s){return (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function taxLabel(t){
+  return {
+    reproduced: "Reproduced",
+    false_positive_unrelated_failure: "False positive",
+    under_detected_no_signal: "No signal",
+    semantic_inversion: "Inverted",
+  }[t] || t;
+}
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected','false'));
+    tab.setAttribute('aria-selected','true');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+tab.dataset.screen).classList.add('active');
+  });
+});
+
+// ---- Budget pips (5/day, 2 spent — matches the two escalation-worthy cases below) ----
+const TOTAL_PIPS = 5, SPENT_PIPS = 2;
+const pipsEl = document.getElementById('pips');
+for(let i=0;i<TOTAL_PIPS;i++){
+  const p = document.createElement('div');
+  p.className = 'pip' + (i<SPENT_PIPS ? ' spent':'');
+  if(i<SPENT_PIPS) p.dataset.tip = 'spent';
+  pipsEl.appendChild(p);
+}
+
+// Escalation-worthy = reproduced (confirmed real bug, worth a human's attention)
+const escalations = DATA.cases.filter(c=>c.taxonomy==='reproduced');
+const quiet = DATA.cases.filter(c=>c.taxonomy!=='reproduced');
+
+// ---- Screen A: Watch ----
+document.getElementById('watch-headline').textContent =
+  `${DATA.summary.n} issues triaged. You were interrupted ${escalations.length}.`;
+
+const timeline = document.getElementById('timeline');
+DATA.cases.forEach(c=>{
+  if(c.taxonomy === 'reproduced'){
+    const card = document.createElement('div');
+    card.className = 'card-loud';
+    card.innerHTML = `<div class="kicker">Escalation — confirmed reproduction</div>
+      <h3>${esc(c.instance_id)}</h3>
+      <p>${esc((c.evidence||'').slice(0,140))}</p>`;
+    timeline.appendChild(card);
+  } else {
+    const row = document.createElement('div');
+    row.className = 'row-quiet';
+    row.innerHTML = `<span class="id">${esc(c.instance_id)}</span>
+      <span>${esc(c.repo)}</span>
+      <span class="verdict tax-${c.taxonomy}">${taxLabel(c.taxonomy)}</span>`;
+    timeline.appendChild(row);
+  }
+});
+
+// ---- Screen B: Receipts ----
+const listEl = document.getElementById('receipt-list');
+const detailEl = document.getElementById('receipt-detail');
+function renderReceipt(c){
+  detailEl.innerHTML = `
+    <div class="receipt-card">
+      <div class="receipt-head">
+        <div>
+          <h2>${esc(c.instance_id)}</h2>
+          <div class="stat-row" style="margin-top:6px;">
+            <span><b>${esc(c.repo)}</b></span>
+            <span>${c.attempts} attempt${c.attempts===1?'':'s'}</span>
+            <span>confidence <b>${c.live_confidence}</b></span>
+          </div>
+        </div>
+        <span class="verdict-badge tax-${c.taxonomy}">${taxLabel(c.taxonomy)}</span>
+      </div>
+      <div class="receipt-body">
+        <div>
+          <div class="field-label">Issue text</div>
+          <div class="issue-text">${esc(c.issue_text || '(not cached in this run — see runs/*.json)')}</div>
+        </div>
+        <div>
+          <div class="field-label">Final reproduction script (attempt ${c.attempts})</div>
+          <pre class="codeblock">${esc(c.final_script || '(script text not cached for this instance)')}</pre>
+        </div>
+        <div class="exec-grid">
+          <div class="exec-col">
+            <div class="field-label">base_commit run <span class="tag">${c.offline_fails_on_buggy===true?'failed ✓':c.offline_fails_on_buggy===false?'passed':'—'}</span></div>
+            <pre class="codeblock">${esc(c.buggy_stdout || c.buggy_stderr || '(not cached)')}</pre>
+          </div>
+          <div class="exec-col">
+            <div class="field-label">gold-patch run <span class="tag">${c.offline_passes_on_fixed===true?'passed ✓':c.offline_passes_on_fixed===false?'failed':'—'}</span></div>
+            <pre class="codeblock">${esc(c.fixed_stdout || c.fixed_stderr || '(not cached)')}</pre>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+DATA.cases.forEach((c,i)=>{
+  const item = document.createElement('button');
+  item.className = 'receipt-item';
+  item.innerHTML = `<span class="rid">${esc(c.instance_id)}</span><span class="rtax">${taxLabel(c.taxonomy)}</span>`;
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.receipt-item').forEach(el=>el.removeAttribute('aria-current'));
+    item.setAttribute('aria-current','true');
+    renderReceipt(c);
+  });
+  if(i===0){ item.setAttribute('aria-current','true'); }
+  listEl.appendChild(item);
+});
+renderReceipt(DATA.cases.find(c=>c.taxonomy==='reproduced') || DATA.cases[0]);
+
+// ---- Screen C: Evidence ----
+document.getElementById('ev-rate').textContent = Math.round(DATA.summary.reproduction_rate*100)+'%';
+document.getElementById('ev-naive').textContent = Math.round(DATA.summary.naive_exit_code_rate*100)+'%';
+
+const compareData = [
+  {name:'GPT-4 zero-shot', v:DATA.baselines.gpt4_zero_shot},
+  {name:'aider', v:DATA.baselines.aider},
+  {name:'SWE-Agent', v:DATA.baselines.swe_agent},
+  {name:'SWE-Agent+', v:DATA.baselines.swe_agent_plus},
+  {name:'Understudy (local 7B)', v:DATA.summary.reproduction_rate, mine:true},
+];
+const maxV = Math.max(...compareData.map(d=>d.v));
+const barsEl = document.getElementById('compare-bars');
+compareData.forEach(d=>{
+  const row = document.createElement('div');
+  row.className = 'compare-row';
+  row.innerHTML = `<span class="name">${d.name}</span>
+    <span class="track"><span class="fill" style="width:${(d.v/maxV*100).toFixed(0)}%;background:${d.mine?'var(--accent)':'var(--ink-faint)'}"></span></span>
+    <span class="val">${(d.v*100).toFixed(1)}%</span>`;
+  barsEl.appendChild(row);
+});
+
+const taxColors = {
+  reproduced: 'var(--good)',
+  false_positive_unrelated_failure: 'var(--bad)',
+  under_detected_no_signal: 'var(--ink-faint)',
+  semantic_inversion: 'var(--accent)',
+};
+const taxoEl = document.getElementById('taxo-list');
+Object.entries(DATA.taxonomy_counts).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+  const item = document.createElement('div');
+  item.className = 'taxo-item';
+  item.innerHTML = `<span class="taxo-swatch" style="background:${taxColors[k]||'var(--ink-faint)'}"></span>
+    <span class="name">${taxLabel(k)}</span><span class="count">${v}</span>`;
+  taxoEl.appendChild(item);
+});
+
+// ---- Screen D: Inbox ----
+const inboxEl = document.getElementById('inbox-grid');
+let pipsLeft = TOTAL_PIPS - SPENT_PIPS;
+if(escalations.length===0){
+  inboxEl.innerHTML = '<div class="empty-note">Nothing waiting — every case today resolved without spending a pip.</div>';
+}
+escalations.forEach(c=>{
+  const card = document.createElement('div');
+  card.className = 'decision-card';
+  card.innerHTML = `
+    <div class="verdict-line">Reproduced — this bug is real</div>
+    <div class="why">${esc(c.repo)} · ${esc(c.instance_id)} · cost 1 pip because it's a confirmed regression, not a guess.</div>
+    <pre class="trace">${esc((c.buggy_stdout||c.evidence||'').slice(0,300))}</pre>
+    <div class="meta">confidence ${c.live_confidence} · ${c.attempts} attempt${c.attempts===1?'':'s'}</div>
+    <div class="decision-actions">
+      <button class="btn primary" data-action="confirm">Confirm &amp; label</button>
+      <button class="btn" data-action="dismiss">Dismiss (refunds)</button>
+    </div>`;
+  const [confirmBtn, dismissBtn] = card.querySelectorAll('button');
+  function resolve(refund){
+    card.classList.add('resolved');
+    confirmBtn.disabled = true; dismissBtn.disabled = true;
+    if(refund){
+      pipsLeft++;
+      const spentPips = document.querySelectorAll('.pip.spent');
+      if(spentPips.length) spentPips[spentPips.length-1].classList.remove('spent');
+    }
+  }
+  confirmBtn.addEventListener('click', ()=>resolve(false));
+  dismissBtn.addEventListener('click', ()=>resolve(true));
+  inboxEl.appendChild(card);
+});
+
+// ---- Ambient poll clock (cassette feel, not a real timer) ----
+let secs = 4*60+12;
+setInterval(()=>{
+  secs = secs>0 ? secs-1 : 4*60+12;
+  const m = Math.floor(secs/60), s = String(secs%60).padStart(2,'0');
+  document.getElementById('poll-clock').textContent = `${m}:${s}`;
+}, 1000);
+</script>
