@@ -127,11 +127,11 @@ button{font-family:inherit; cursor:pointer;}
 .row-quiet:hover{border-color:var(--border); background:var(--surface-3);}
 .row-quiet .id{font-family:"IBM Plex Mono"; color:var(--ink-faint); width:150px; flex-shrink:0;}
 .row-quiet .verdict-dot{
-  margin-left:auto; width:6px; height:6px; border-radius:50%; flex-shrink:0;
-  background:var(--ink-faint); position:relative;
+  margin-left:auto; width:9px; height:9px; border-radius:50%; flex-shrink:0;
+  background:var(--surface); border:2px solid var(--ink-faint); position:relative;
 }
-.row-quiet .verdict-dot.tax-reproduced{background:var(--good);}
-.row-quiet .verdict-dot.tax-false_positive_unrelated_failure,.row-quiet .verdict-dot.tax-semantic_inversion{background:var(--bad);}
+.row-quiet .verdict-dot.tax-reproduced{border-color:var(--good); background:var(--good);}
+.row-quiet .verdict-dot.tax-false_positive_unrelated_failure,.row-quiet .verdict-dot.tax-semantic_inversion{border-color:var(--bad);}
 .row-quiet .verdict-dot[data-tip]:hover::after{
   content:attr(data-tip); position:absolute; bottom:150%; right:-4px;
   background:var(--ink); color:var(--bg); font-size:11px; padding:4px 8px; border-radius:6px;
@@ -139,10 +139,10 @@ button{font-family:inherit; cursor:pointer;}
 }
 
 .card-loud{
-  border:1.5px solid var(--accent); border-radius:12px; padding:16px 18px; margin-block:10px;
-  background:var(--surface); box-shadow:var(--shadow);
+  border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:4px;
+  padding:16px 18px; margin-block:10px; background:var(--surface); box-shadow:var(--shadow);
 }
-.card-loud .kicker{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); font-weight:600;}
+.card-loud .kicker{font-size:11px; font-family:"IBM Plex Mono"; letter-spacing:.02em; color:var(--accent); font-weight:500;}
 .card-loud h3{font-size:17px; margin-block:4px 6px;}
 .card-loud p{color:var(--ink-muted); font-size:13.5px; margin:0;}
 
@@ -152,13 +152,13 @@ button{font-family:inherit; cursor:pointer;}
 .receipt-list{display:flex; flex-direction:column; gap:4px; max-height:70vh; overflow:auto;}
 .receipt-item{
   text-align:left; border:1px solid var(--border); background:var(--surface);
-  border-radius:8px; padding:9px 11px; font-size:12.5px;
+  border-radius:4px; padding:9px 11px; font-size:12.5px;
 }
-.receipt-item[aria-current="true"]{border-color:var(--accent); background:var(--good-bg); box-shadow:var(--shadow);}
+.receipt-item[aria-current="true"]{border-color:var(--accent); border-left:3px solid var(--accent); background:var(--good-bg);}
 .receipt-item .rid{font-family:"IBM Plex Mono"; font-weight:500;}
 .receipt-item .rtax{display:block; font-size:10.5px; color:var(--ink-muted); margin-top:3px;}
 
-.receipt-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow);}
+.receipt-card{background:var(--surface); border:1px solid var(--border); border-radius:4px;}
 .receipt-head{padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
 .receipt-head h2{font-size:19px;}
 .verdict-badge{
@@ -187,7 +187,7 @@ pre.codeblock{
 /* ---------- Screen C: Evidence ---------- */
 .evidence-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:22px; margin-bottom:22px;}
 @media (max-width:760px){.evidence-grid{grid-template-columns:1fr;}}
-.panel{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow);}
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:20px 22px;}
 .panel h2{font-size:15px; margin-bottom:14px;}
 .panel .field-label{margin-top:0;}
 
@@ -212,12 +212,13 @@ pre.codeblock{
 /* ---------- Screen D: Inbox ---------- */
 .inbox-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
 .decision-card{
-  background:var(--surface); border:1px solid var(--border); border-radius:12px;
-  padding:16px 18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px;
+  background:var(--surface); border:1px solid var(--border); border-radius:4px;
+  padding:16px 18px; display:flex; flex-direction:column; gap:10px;
   min-height:230px;
 }
 .decision-card.resolved{opacity:.45;}
-.decision-card .verdict-line{font-family:"Fraunces"; font-size:17px; font-weight:600;}
+.decision-card .verdict-tag{font-size:10.5px; font-family:"IBM Plex Mono"; color:var(--good); text-transform:uppercase; letter-spacing:.04em;}
+.decision-card .verdict-line{font-family:"Fraunces"; font-size:16px; font-weight:600; line-height:1.3;}
 .decision-card .why{font-size:12.5px; color:var(--ink-muted);}
 .decision-card .trace{
   font-size:11px; background:var(--surface-2); border-radius:6px; padding:8px 10px;
@@ -368,7 +369,7 @@ DATA.cases.forEach(c=>{
   if(c.taxonomy === 'reproduced'){
     const card = document.createElement('div');
     card.className = 'card-loud';
-    card.innerHTML = `<div class="kicker">Escalation — confirmed reproduction</div>
+    card.innerHTML = `<div class="kicker">${esc(c.repo)} · gold-patch confirmed · ${Math.round(c.live_confidence*100)}% confidence, ${c.attempts} attempt${c.attempts===1?'':'s'}</div>
       <h3>${esc(c.instance_id)}</h3>
       <p>${esc((c.evidence||'').slice(0,140))}</p>`;
     timeline.appendChild(card);
@@ -483,9 +484,11 @@ if(escalations.length===0){
 escalations.forEach(c=>{
   const card = document.createElement('div');
   card.className = 'decision-card';
+  const finding = esc((c.evidence||c.instance_id||'').split('\n')[0].slice(0,90));
   card.innerHTML = `
-    <div class="verdict-line">Reproduced — this bug is real</div>
-    <div class="why">${esc(c.repo)} · ${esc(c.instance_id)} · cost 1 pip because it's a confirmed regression, not a guess.</div>
+    <div class="verdict-tag">Reproduced, cost 1 pip</div>
+    <div class="verdict-line">${finding}</div>
+    <div class="why">${esc(c.repo)} · ${esc(c.instance_id)} — confirmed by the gold-patch differential, not a guess.</div>
     <pre class="trace">${esc((c.buggy_stdout||c.evidence||'').slice(0,300))}</pre>
     <div class="meta">confidence ${c.live_confidence} · ${c.attempts} attempt${c.attempts===1?'':'s'}</div>
     <div class="decision-actions">
