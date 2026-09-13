@@ -162,6 +162,64 @@ def prepare_fixed_image(
         patch_path.unlink(missing_ok=True)
 
 
+def prepare_sanitized_image(base_image: str, *, workdir: str = "/testbed") -> str:
+    """Trusted, offline, one-time preparation step: strip .git, patches, and
+    benchmark answer material from a writable copy of the base image and
+    commit the result as a new local image. The untrusted generated script
+    only ever runs against THIS image, never the raw base image — SWE-bench
+    images bake the full repo (including .git) directly into the image
+    filesystem, so mounting a sanitized host-side copy over the top isn't an
+    option; the image itself has to be rebuilt without those paths, the same
+    way prepare_fixed_image rebuilds one to apply the gold patch.
+
+    Without this step, blocking `git` at the tool-call level protects nothing
+    here: the generated script never goes through a Strands tool call at all
+    in the measured pipeline, and .git is physically present in the
+    container regardless of what the hook blocks.
+    """
+    prep_name = f"understudy-sanitize-{uuid.uuid4().hex[:12]}"
+    clean_tag = f"understudy-clean-{uuid.uuid4().hex[:12]}"
+
+    # Matches understudy/sandbox/sanitize.py's FORBIDDEN_NAMES / FORBIDDEN_GLOBS,
+    # applied inside the image instead of a host-side copy.
+    strip_cmd = (
+        f"find {workdir} \\( -name .git -o -name .gitmodules \\) -exec rm -rf {{}} + ; "
+        f"find {workdir} -type f \\( -name '*.patch' -o -name 'gold_patch*' "
+        f"-o -name 'eval.sh' -o -name 'run_tests.sh' \\) -delete"
+    )
+
+    try:
+        create = _docker(
+            "create", "--name", prep_name,
+            base_image,
+            "/bin/bash", "-lc", strip_cmd,
+            timeout=30,
+        )
+        if create.returncode != 0:
+            raise RuntimeError(f"prepare_sanitized_image: create failed: {create.stderr.decode()}")
+
+        start = _docker("start", "-a", prep_name, timeout=60)
+        if start.returncode != 0:
+            raise RuntimeError(
+                f"prepare_sanitized_image: strip failed: {start.stdout.decode()} {start.stderr.decode()}"
+            )
+
+        commit = _docker("commit", prep_name, clean_tag, timeout=60)
+        if commit.returncode != 0:
+            raise RuntimeError(f"prepare_sanitized_image: commit failed: {commit.stderr.decode()}")
+
+        return clean_tag
+    finally:
+        _docker("rm", "-f", prep_name, timeout=10)
+
+
+def remove_image(tag: str) -> None:
+    """Best-effort cleanup for a local image produced by prepare_sanitized_image
+    or prepare_fixed_image. Never raises — a leftover tagged image is a disk-
+    space nuisance, not a correctness or safety problem."""
+    _docker("rmi", "-f", tag, timeout=30)
+
+
 def run_patched_script_in_container(
     image: str,
     script_path: Path,
@@ -178,13 +236,22 @@ def run_patched_script_in_container(
     """
     fixed_image = prepare_fixed_image(image, gold_patch_text, workdir=workdir)
     try:
-        return run_script_in_container(
-            fixed_image,
-            script_path,
-            workdir=workdir,
-            conda_env=conda_env,
-            timeout_s=timeout_s,
-        )
+        # The script must not be able to tell it's running post-patch by
+        # reading .git (e.g. checking which commit HEAD is on) and using
+        # that instead of actually exercising the reported behavior — that
+        # would trivially defeat the whole differential. Sanitize the same
+        # way the buggy-commit run is sanitized.
+        clean_fixed_image = prepare_sanitized_image(fixed_image, workdir=workdir)
+        try:
+            return run_script_in_container(
+                clean_fixed_image,
+                script_path,
+                workdir=workdir,
+                conda_env=conda_env,
+                timeout_s=timeout_s,
+            )
+        finally:
+            _docker("rmi", "-f", clean_fixed_image, timeout=30)
     finally:
         _docker("rmi", "-f", fixed_image, timeout=30)
 

@@ -37,13 +37,17 @@ Ran both checks side by side on the same 16 real SWE-bench Verified instances:
 
 The naive number is what you'd publish if you didn't check. It's wrong by 4.6x. Eleven of
 those sixteen "reproductions" were scripts that failed for reasons unrelated to the reported
-bug and kept failing after the real fix: proof the failure had nothing to do with the
-patch. One inverted the bug's own example, mistaking the buggy output shown in the issue for
-the correct one. Full taxonomy, and every underlying run, is in `results.json` and on Screen
-C of the live demo.
+bug and kept failing after the real fix, which is what the differential is designed to catch:
+a fix that doesn't change the outcome is evidence the failure and the patch are unrelated,
+though it can't rule out every alternative explanation on its own. One inverted the bug's own
+example, mistaking the buggy output shown in the issue for the correct one. Full taxonomy,
+and every underlying run, is in `results.json` and on Screen C of the live demo.
 
-19% still clears the published zero-shot floor (GPT-4, issue text alone: 3.6%), on a model
-that costs nothing to run.
+19% is above the published GPT-4 zero-shot figure (3.6%, issue text alone), though the two
+numbers aren't a controlled comparison: different sample (16 instances here vs. the full
+benchmark there), different scoring pass, no significance test. Read it as "the same order of
+magnitude as one small, cheap model can plausibly do," not as a claim that this model beats
+GPT-4.
 
 ## The model, and why it isn't what the plan originally said
 
@@ -78,18 +82,20 @@ network access at execution time.
 - **The agent never sees a gold patch.** `Instance` (agent-facing) has no field for one:
   it's a type-level guarantee. Only `ScoringCase`, used exclusively by the offline scorer,
   carries it.
-- **The agent never runs `git`.** Blocked in `UnderstudyPolicyHook`'s `BeforeToolCallEvent`
-  handler, and separately the sandbox sanitizer strips `.git`/packed-refs/patches from
-  anything the agent's tools can read. Two independent layers, because blocking the `git`
-  executable alone isn't enough (the fix commit is still reachable by reading objects
-  directly).
+- **The generated script never sees `.git`.** Blocked in `UnderstudyPolicyHook`'s
+  `BeforeToolCallEvent` handler for a Strands agent invoking tools; the sandbox sanitizer
+  strips `.git`/packed-refs/patches from anything the agent's `read_file`/`search_source`
+  tools can read; and, separately, every container a generated script actually executes in
+  is itself rebuilt from a `.git`-stripped image first (`prepare_sanitized_image`), so the
+  script can't read commit history even though it never goes through a tool call at all.
 - **Untrusted code always runs under full lockdown**: `--network none`, read-only rootfs
   with a tmpfs `/tmp`, capped memory/CPU/processes, `--user nobody`, stdin from `/dev/null`
   (so a script calling `input()` hits EOF instead of hanging forever), and a host-enforced
   timeout that actually kills and removes the container, not just the CLI process.
 - **Applying the gold patch is a separate, trusted lifecycle** from executing untrusted
   code. A throwaway writable container commits to a new local image and is discarded; the
-  untrusted script only ever runs afterward, under the same lockdown as the buggy run.
+  untrusted script only ever runs afterward, against a sanitized copy of that patched
+  image, under the same lockdown as the buggy run.
 
 Full writeup: `SAFETY.md`.
 

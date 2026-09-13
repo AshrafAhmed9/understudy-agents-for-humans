@@ -297,8 +297,8 @@ pre.codeblock{
         API call also exits non-zero. The gold-patch differential is the only check this project trusts:
         run the script at <code>base_commit</code> (must fail), then again with the dataset's answer-key
         patch applied (must pass). Eleven of these sixteen “reproductions” were scripts that failed for
-        reasons unrelated to the reported bug and kept failing after the real fix — proof the failure had
-        nothing to do with the patch. One inverted the bug's own example, mistaking the buggy output shown
+        reasons unrelated to the reported bug and kept failing after the real fix — evidence the failure and
+        the patch are unrelated. One inverted the bug's own example, mistaking the buggy output shown
         in the issue for the correct one. The model never sees the gold patch; only this offline scorer does.
       </p>
     </div>

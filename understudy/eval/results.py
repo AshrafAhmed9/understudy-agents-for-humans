@@ -16,7 +16,12 @@ from typing import Callable
 
 from understudy.data.swebench import epoch_image_ref
 from understudy.receipts import atomic_write_json
-from understudy.sandbox.runner import run_patched_script_in_container, run_script_in_container
+from understudy.sandbox.runner import (
+    prepare_sanitized_image,
+    remove_image,
+    run_patched_script_in_container,
+    run_script_in_container,
+)
 from understudy.scoring.differential import score_differential
 from understudy.schemas import Instance, ScoringCase, TriageResult
 
@@ -142,7 +147,14 @@ def run_eval(
                 script_path = Path(f"/tmp/eval-{case.instance.instance_id}.py")
                 script_path.write_text(result.final_spec.script)
 
-                buggy = run_script_in_container(image, script_path, timeout_s=timeout_s)
+                # Same reasoning as the live triage loop: the script must
+                # never be able to read .git to tell which commit it's
+                # running against instead of actually testing for the bug.
+                clean_image = prepare_sanitized_image(image)
+                try:
+                    buggy = run_script_in_container(clean_image, script_path, timeout_s=timeout_s)
+                finally:
+                    remove_image(clean_image)
                 fixed = run_patched_script_in_container(
                     image, script_path, case.gold_patch, timeout_s=timeout_s
                 )

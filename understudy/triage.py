@@ -20,7 +20,11 @@ import re
 from dataclasses import dataclass
 
 from understudy.data.swebench import epoch_image_ref
-from understudy.sandbox.runner import run_script_in_container
+from understudy.sandbox.runner import (
+    prepare_sanitized_image,
+    remove_image,
+    run_script_in_container,
+)
 from understudy.schemas import ExecResult, Instance, ReproSpec, TriageResult, Verdict
 
 MAX_ATTEMPTS = 3
@@ -106,18 +110,27 @@ def build_triage_fn(generator: OllamaGenerator | None = None):
 
     def triage(instance: Instance) -> TriageResult:
         image = epoch_image_ref(instance.instance_id)
+        # The generated script never runs against the raw image: SWE-bench
+        # images bake .git into the filesystem, so blocking `git` as a tool
+        # call (irrelevant here — no Strands tool call happens in this
+        # loop) protects nothing on its own. Every attempt below runs
+        # against a one-time-sanitized image instead.
+        clean_image = prepare_sanitized_image(image)
 
-        prompt = PROMPT_TEMPLATE.format(repo=instance.repo, issue_text=instance.issue_text)
-        script = _extract_code(gen.generate(prompt))
+        try:
+            prompt = PROMPT_TEMPLATE.format(repo=instance.repo, issue_text=instance.issue_text)
+            script = _extract_code(gen.generate(prompt))
 
-        attempts = 1
-        result: ExecResult = run_script_in_container(image, _write_tmp(script), timeout_s=60)
+            attempts = 1
+            result: ExecResult = run_script_in_container(clean_image, _write_tmp(script), timeout_s=60)
 
-        while attempts < MAX_ATTEMPTS and _is_script_crash(result.stderr):
-            repair_prompt = REPAIR_TEMPLATE.format(script=script, stderr=result.stderr[:2000])
-            script = _extract_code(gen.generate(repair_prompt))
-            attempts += 1
-            result = run_script_in_container(image, _write_tmp(script), timeout_s=60)
+            while attempts < MAX_ATTEMPTS and _is_script_crash(result.stderr):
+                repair_prompt = REPAIR_TEMPLATE.format(script=script, stderr=result.stderr[:2000])
+                script = _extract_code(gen.generate(repair_prompt))
+                attempts += 1
+                result = run_script_in_container(clean_image, _write_tmp(script), timeout_s=60)
+        finally:
+            remove_image(clean_image)
 
         spec = ReproSpec(script=script, attempt=attempts)
 

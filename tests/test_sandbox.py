@@ -187,3 +187,35 @@ def test_offline_differential_reproduces_a_real_bug(tmp_path):
         capture_output=True, timeout=10,
     ).stdout.decode().strip()
     assert leftover == ""
+    leftover_clean = subprocess.run(
+        ["docker", "images", "--filter", "reference=understudy-clean-*", "-q"],
+        capture_output=True, timeout=10,
+    ).stdout.decode().strip()
+    assert leftover_clean == ""
+
+
+@pytest.mark.skipif(not _real_image_present(), reason="real SWE-bench image not pulled locally")
+def test_generated_script_cannot_see_git_history(tmp_path):
+    """The whole point of the differential is that the script can't know
+    which commit it's running against except by actually testing for the
+    bug. If .git were reachable, a script could trivially cheat by checking
+    HEAD instead of exercising any real behavior."""
+    from understudy.sandbox.runner import prepare_sanitized_image, remove_image
+
+    clean_image = prepare_sanitized_image(_REAL_IMAGE)
+    try:
+        check = subprocess.run(
+            ["docker", "run", "--rm", clean_image, "/bin/bash", "-lc",
+             "test -e /testbed/.git && echo PRESENT || echo ABSENT"],
+            capture_output=True, timeout=30,
+        )
+        assert b"ABSENT" in check.stdout
+        # The rest of the checkout must still be there and usable.
+        setup_check = subprocess.run(
+            ["docker", "run", "--rm", clean_image, "/bin/bash", "-lc",
+             "test -e /testbed/setup.py && echo PRESENT || echo ABSENT"],
+            capture_output=True, timeout=30,
+        )
+        assert b"PRESENT" in setup_check.stdout
+    finally:
+        remove_image(clean_image)

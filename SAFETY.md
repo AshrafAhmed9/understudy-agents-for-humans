@@ -7,13 +7,21 @@ and, for the sandbox, a real Docker daemon.
 ## What it will never do
 
 - **Never runs `git`**, or anything else that could reach a fix commit,
-  a patch, or benchmark answer material. Two independent layers: the
-  `git` executable is blocked at the tool-call level
-  (`understudy/policy/hooks.py`), and the filesystem the agent can see has
-  already had `.git`, packed refs, and patch/eval files stripped out before
-  the agent ever gets a look (`understudy/sandbox/sanitize.py`) — verified
-  by a test that manufactures a repo with all of that present and confirms
-  none of it survives sanitization.
+  a patch, or benchmark answer material. Three layers, because each covers
+  a different execution path: the `git` executable is blocked at the
+  tool-call level for a Strands agent invoking tools
+  (`understudy/policy/hooks.py`); the host-side tree used by the agent's
+  `read_file`/`search_source` tools has `.git`, packed refs, and patch/eval
+  files stripped before the agent ever sees it
+  (`understudy/sandbox/sanitize.py`); and — the layer that actually matters
+  for the measured pipeline, where no Strands tool call happens at all —
+  every container a generated script executes in is itself rebuilt from a
+  `.git`-stripped image before that script ever runs
+  (`prepare_sanitized_image` in `understudy/sandbox/runner.py`), so the
+  script cannot read commit history no matter what it tries. Verified
+  against a real Docker daemon: `tests/test_sandbox.py::
+  test_generated_script_cannot_see_git_history` confirms `.git` is absent
+  inside the container while the rest of the checkout is intact.
 - **Never executes untrusted code outside a locked-down container.**
   No network, a read-only root filesystem, a capped process count, an
   unprivileged user, a memory ceiling, and a host-enforced timeout that

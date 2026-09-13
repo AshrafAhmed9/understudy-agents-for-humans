@@ -39,7 +39,8 @@ flowchart TD
     end
 
     subgraph Sandbox["understudy/sandbox/ — the trust boundary"]
-        SAN[sanitize.py\nstrips .git, packed refs, patches]
+        SAN[sanitize.py\nstrips .git, packed refs, patches\nfrom the agent's own read_file/search_source view]
+        CLEAN[prepare_sanitized_image\nrebuilds the image itself\nwithout .git before execution]
         RUN[runner.py\nrun_script_in_container\nnetwork:none, ro rootfs,\nnobody, 512m, 60s host-killed]
         PREP[prepare_fixed_image\noffline-only, trusted,\napplies gold patch]
     end
@@ -60,9 +61,9 @@ flowchart TD
     SWE --> LOOP
     A --> T1 --> SAN
     A --> T2 --> SAN
-    LOOP -->|candidate script| RUN
+    LOOP -->|candidate script| CLEAN --> RUN
     RUN -->|ExecResult| DIFF
-    PREP -->|fixed image| RUN
+    PREP --> CLEAN
     DIFF --> REC
     REC --> UI
 ```
@@ -76,11 +77,15 @@ would have wrongly claimed. See `results.json` for the full breakdown.
 1. **The agent never sees a gold patch.** `Instance` (agent-facing) has no
    field for one — it's a type-level guarantee, not a convention. Only
    `ScoringCase`, used exclusively by the offline scorer, carries it.
-2. **The agent never runs `git`.** Blocked in `UnderstudyPolicyHook`, and
-   the sanitizer separately strips `.git`/packed-refs/patches from the tree
-   the agent's tools can see — two independent layers, because blocking the
-   `git` executable alone is not sufficient (the fix commit is reachable by
-   reading objects directly).
+2. **The generated script never sees `.git`.** `git` is blocked in
+   `UnderstudyPolicyHook` for a Strands agent invoking tools, and the
+   sanitizer separately strips `.git`/packed-refs/patches from the tree the
+   agent's `read_file`/`search_source` tools can see. Neither of those
+   covers the container the script actually executes in — that path never
+   goes through a tool call — so every such container is rebuilt from a
+   `.git`-stripped image first (`prepare_sanitized_image`) before the
+   script ever runs in it, for both the buggy-commit run and the
+   gold-patch-applied run.
 3. **Untrusted code (the generated reproduction script) always runs under
    full lockdown**: no network, read-only root filesystem, capped memory/
    processes/user, host-enforced timeout that actually kills the container
