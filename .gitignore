@@ -7,4 +7,5 @@ venv/
 .env
 .DS_Store
 understudy.egg-info/
+.pytest_cache/
 internal/
