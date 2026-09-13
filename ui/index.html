@@ -412,11 +412,11 @@ function renderReceipt(c){
         <div class="exec-grid">
           <div class="exec-col">
             <div class="field-label">base_commit run <span class="tag">${c.offline_fails_on_buggy===true?'failed ✓':c.offline_fails_on_buggy===false?'passed':'—'}</span></div>
-            <pre class="codeblock">${esc(c.buggy_stdout || c.buggy_stderr || '(not cached)')}</pre>
+            <pre class="codeblock">${esc(c.buggy_stdout || c.buggy_stderr || '(no output; the script exited silently)')}</pre>
           </div>
           <div class="exec-col">
             <div class="field-label">gold-patch run <span class="tag">${c.offline_passes_on_fixed===true?'passed ✓':c.offline_passes_on_fixed===false?'failed':'—'}</span></div>
-            <pre class="codeblock">${esc(c.fixed_stdout || c.fixed_stderr || '(not cached)')}</pre>
+            <pre class="codeblock">${esc(c.fixed_stdout || c.fixed_stderr || '(no output; the script exited silently)')}</pre>
           </div>
         </div>
       </div>
