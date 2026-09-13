@@ -1,9 +1,20 @@
 """Unit tests for understudy.triage using a fake generator (no network, no
 Ollama). Real-model behavior is separately probed in
-scripts/test_local_model_repro.py against real cached instances."""
+scripts/test_local_model_repro.py against real cached instances. The real
+prepare_sanitized_image/remove_image Docker calls are covered for real in
+tests/test_sandbox.py; here they're stubbed out (autouse fixture below) so
+these stay fast, no-Docker unit tests of the triage control flow itself."""
+
+import pytest
 
 from understudy.schemas import Instance
 from understudy.triage import OllamaGenerator, build_triage_fn
+
+
+@pytest.fixture(autouse=True)
+def _no_real_sanitization(monkeypatch):
+    monkeypatch.setattr("understudy.triage.prepare_sanitized_image", lambda image: image)
+    monkeypatch.setattr("understudy.triage.remove_image", lambda tag: None)
 
 INSTANCE = Instance(
     instance_id="astropy__astropy-12907",
